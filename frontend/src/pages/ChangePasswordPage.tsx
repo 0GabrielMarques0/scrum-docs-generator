@@ -48,7 +48,7 @@ export default function ChangePasswordPage() {
         newPassword 
       })
       showSuccess('Senha alterada!', 'Sua senha foi alterada com sucesso')
-      navigate('/')
+      navigate('/app')
     } catch (err: any) {
       const errorMessage = err.response?.data?.error || 'Erro ao alterar senha'
       setError(errorMessage)

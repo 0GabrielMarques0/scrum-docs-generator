@@ -54,7 +54,7 @@ export default function HomePage() {
         </p>
         <div className="flex gap-4 justify-center">
           <Link
-            to="/projects"
+            to="/app/projects"
             className="bg-primary-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-700 transition-colors flex items-center gap-2"
           >
             <Sparkles size={20} />

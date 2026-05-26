@@ -55,7 +55,7 @@ export default function ProjectsPage() {
       setShowNewModal(false)
       setNewProject({ name: '' })
       showSuccess('Projeto criado', 'Agora adicione prints das telas para gerar os requisitos')
-      navigate(`/projects/${data.id}`)
+      navigate(`/app/projects/${data.id}`)
     } catch (error) {
       console.error('Error creating project:', error)
       showError('Erro', 'Não foi possível criar o projeto')
@@ -138,7 +138,7 @@ export default function ProjectsPage() {
                 Criado em {new Date(project.created_at).toLocaleDateString('pt-BR')}
               </p>
               <button
-                onClick={() => navigate(`/projects/${project.id}`)}
+                onClick={() => navigate(`/app/projects/${project.id}`)}
                 className="w-full bg-primary-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-primary-700 flex items-center justify-center gap-2"
               >
                 Abrir Projeto

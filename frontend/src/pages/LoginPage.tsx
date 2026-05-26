@@ -41,7 +41,7 @@ export default function LoginPage() {
         setExiting(true)
         // Wait for exit animation then navigate
         setTimeout(() => {
-          navigate('/')
+          navigate('/app')
         }, 500)
       }, 1500)
     } catch (err: any) {

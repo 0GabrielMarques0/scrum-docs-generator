@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
+import LandingPage from './pages/LandingPage'
 import HomePage from './pages/HomePage'
 import ProjectsPage from './pages/ProjectsPage'
 import ProjectDetailPage from './pages/ProjectDetailPage'
@@ -18,11 +19,15 @@ function App() {
       <ToastProvider>
         <ConfirmProvider>
           <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            
+            {/* Protected Routes */}
             <Route
-              path="/*"
+              path="/app/*"
               element={
                 <ProtectedRoute>
                   <Layout>
