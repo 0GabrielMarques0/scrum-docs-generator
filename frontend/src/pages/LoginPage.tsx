@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { LogIn, Loader2, AlertCircle, Eye, EyeOff, Moon, Sun } from 'lucide-react'
 
@@ -178,7 +178,25 @@ export default function LoginPage() {
                 </>
               )}
             </button>
+
+            <div className="text-center">
+              <Link 
+                to="/forgot-password" 
+                className="text-sm text-primary-500 hover:text-primary-400 transition-colors"
+              >
+                Esqueci minha senha
+              </Link>
+            </div>
           </form>
+
+          <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700 text-center">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Não tem uma conta?{' '}
+              <Link to="/register" className="text-primary-500 hover:text-primary-400 font-medium">
+                Criar conta
+              </Link>
+            </p>
+          </div>
         </div>
 
         {/* Footer */}

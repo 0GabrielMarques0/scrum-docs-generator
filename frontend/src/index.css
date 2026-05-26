@@ -175,21 +175,32 @@ body {
   width: 100%;
   border-collapse: collapse;
   margin: 1rem 0;
+  border: 1px solid #e2e8f0;
+  table-layout: fixed;
 }
 
+/* First row of table is always the header */
+.ql-editor table tr:first-child td,
+.ql-editor table tr:first-child th,
 .ql-editor th {
   background-color: #1e3a5f;
   color: white;
   padding: 0.75rem;
   text-align: left;
+  border: 1px solid #1e3a5f;
+  word-wrap: break-word;
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 
 .ql-editor td {
   padding: 0.625rem 0.75rem;
-  border-bottom: 1px solid #e2e8f0;
+  border: 1px solid #e2e8f0;
+  word-wrap: break-word;
 }
 
-.ql-editor tr:nth-child(even) {
+/* Skip first row in zebra striping */
+.ql-editor tr:nth-child(even):not(:first-child) {
   background-color: #f8fafc;
 }
 
@@ -203,15 +214,22 @@ body {
   color: #93c5fd;
 }
 
+.dark .ql-editor table {
+  border-color: #334155;
+}
+
+.dark .ql-editor table tr:first-child td,
+.dark .ql-editor table tr:first-child th,
 .dark .ql-editor th {
   background-color: #1e3a5f;
+  border-color: #1e3a5f;
 }
 
 .dark .ql-editor td {
   border-color: #334155;
 }
 
-.dark .ql-editor tr:nth-child(even) {
+.dark .ql-editor tr:nth-child(even):not(:first-child) {
   background-color: #1e293b;
 }
 

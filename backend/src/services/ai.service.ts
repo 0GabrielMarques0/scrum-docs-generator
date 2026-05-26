@@ -279,8 +279,13 @@ O documento deve seguir EXATAMENTE este formato:
    - Obrigatório (Sim, Não, ou - se não tiver certeza)
 
 5. **Regras de Negócio** - Lista de regras específicas desta tela
-   - Se encontrou um quadro de "Rules" na imagem, liste todas as regras aqui
-   - Inclua validações, restrições, permissões e comportamentos especiais
+   - Se houver um quadro de "Rules" na imagem, extraia TODAS as regras dele
+   - Se NÃO houver quadro de regras, CRIE regras de negócio baseadas no tipo de tela:
+     * Tela de login: validação de credenciais, tentativas máximas, bloqueio de conta, etc.
+     * Tela de cadastro: campos obrigatórios, formato de email, força de senha, etc.
+     * Tela de listagem: paginação, filtros, ordenação, permissões de acesso, etc.
+     * Formulários: validações de campos, máscaras, dependências entre campos, etc.
+   - SEMPRE gere pelo menos 3 regras de negócio relevantes para a tela
    - Formato: lista com bullet points (RN-01: descrição, RN-02: descrição, etc.)
 
 IMPORTANTE:
@@ -289,10 +294,9 @@ IMPORTANTE:
 - Headers em azul escuro (#1e3a5f)
 - Tabelas com bordas cinza (#e2e8f0)
 - Tabelas devem ter style="table-layout: fixed; width: 100%;"
-- Coluna ID: width="8%"
-- Coluna Requisito: width="20%"
-- Coluna Descrição: width="62%" 
-- Coluna Obrigatório: width="10%"
+- ESTRUTURA DA TABELA OBRIGATÓRIA - cada coluna em tag separada:
+  <table><thead><tr><th>ID</th><th>Requisito</th><th>Descrição</th><th>Obrigatório</th></tr></thead><tbody><tr><td>RF-01</td><td>Nome</td><td>Descrição</td><td>Sim</td></tr></tbody></table>
+- NUNCA coloque múltiplos headers numa única célula <th>
 - Descrições devem ser CONCISAS (máximo 2 linhas)
 - NÃO inclua cenários de teste, integrações/APIs ou histórico de revisões`;
 
@@ -401,8 +405,13 @@ O documento deve seguir EXATAMENTE este formato:
    - Obrigatório (Sim, Não, ou - se não tiver certeza)
 
 5. **Regras de Negócio** - Lista de regras específicas desta tela
-   - Se encontrou um quadro de "Rules" na imagem, liste todas as regras aqui
-   - Inclua validações, restrições, permissões e comportamentos especiais
+   - Se houver um quadro de "Rules" na imagem, extraia TODAS as regras dele
+   - Se NÃO houver quadro de regras, CRIE regras de negócio baseadas no tipo de tela:
+     * Tela de login: validação de credenciais, tentativas máximas, bloqueio de conta, etc.
+     * Tela de cadastro: campos obrigatórios, formato de email, força de senha, etc.
+     * Tela de listagem: paginação, filtros, ordenação, permissões de acesso, etc.
+     * Formulários: validações de campos, máscaras, dependências entre campos, etc.
+   - SEMPRE gere pelo menos 3 regras de negócio relevantes para a tela
    - Formato: lista com bullet points (RN-01: descrição, RN-02: descrição, etc.)
 
 IMPORTANTE:
@@ -411,10 +420,9 @@ IMPORTANTE:
 - Headers em azul escuro (#1e3a5f)
 - Tabelas com bordas cinza (#e2e8f0)
 - Tabelas devem ter style="table-layout: fixed; width: 100%;"
-- Coluna ID: width="8%"
-- Coluna Requisito: width="20%"
-- Coluna Descrição: width="62%" 
-- Coluna Obrigatório: width="10%"
+- ESTRUTURA DA TABELA OBRIGATÓRIA - cada coluna em tag separada:
+  <table><thead><tr><th>ID</th><th>Requisito</th><th>Descrição</th><th>Obrigatório</th></tr></thead><tbody><tr><td>RF-01</td><td>Nome</td><td>Descrição</td><td>Sim</td></tr></tbody></table>
+- NUNCA coloque múltiplos headers numa única célula <th>
 - Descrições devem ser CONCISAS (máximo 2 linhas)
 - NÃO inclua cenários de teste, integrações/APIs ou histórico de revisões`;
 

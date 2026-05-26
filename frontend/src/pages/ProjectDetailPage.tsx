@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { 
   ArrowLeft, FileText, Save, Loader2, 
@@ -6,9 +6,7 @@ import {
   Sparkles, Edit3, Trash2, Eye, Download,
   X, FileType, File, ChevronDown, Code, Upload, Image, Plus
 } from 'lucide-react'
-import ReactQuill from 'react-quill-new'
-// @ts-ignore
-import 'react-quill-new/dist/quill.snow.css'
+import { Editor } from '@tinymce/tinymce-react'
 import { saveAs } from 'file-saver'
 import { api } from '../services/api'
 import Loading from '../components/Loading'
@@ -61,6 +59,7 @@ export default function ProjectDetailPage() {
   const [showAddScreenModal, setShowAddScreenModal] = useState(false)
   const [newScreenName, setNewScreenName] = useState('')
   const [newScreenImages, setNewScreenImages] = useState<{ file: File; preview: string }[]>([])
+  const [isDragOver, setIsDragOver] = useState(false)
   const addScreenFileInputRef = useRef<HTMLInputElement>(null)
 
   // Load project data
@@ -107,6 +106,7 @@ export default function ProjectDetailPage() {
   const closeAddScreenModal = () => {
     setShowAddScreenModal(false)
     setNewScreenName('')
+    setIsDragOver(false)
     // Clean up previews
     newScreenImages.forEach(img => URL.revokeObjectURL(img.preview))
     setNewScreenImages([])
@@ -127,6 +127,43 @@ export default function ProjectDetailPage() {
     }))
 
     setNewScreenImages(prev => [...prev, ...newImages])
+  }
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items
+    if (!items) return
+
+    const imageFiles: File[] = []
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        const file = items[i].getAsFile()
+        if (file) imageFiles.push(file)
+      }
+    }
+
+    if (imageFiles.length > 0) {
+      e.preventDefault()
+      handleAddScreenImages(imageFiles)
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+    const files = e.dataTransfer?.files
+    if (files && files.length > 0) {
+      handleAddScreenImages(files)
+    }
   }
 
   const removeScreenImage = (index: number) => {
@@ -193,7 +230,7 @@ export default function ProjectDetailPage() {
       }
 
       setSelectedScreen(virtualScreen)
-      setEditorContent(data.requirements)
+      setEditorContent(fixTableHeaders(data.requirements))
       setHasChanges(true)
       showSuccess('Requisitos gerados', 'A IA analisou as imagens e gerou os requisitos')
     } catch (error: any) {
@@ -213,7 +250,7 @@ export default function ProjectDetailPage() {
         projectName: project.name,
       })
       
-      setEditorContent(data.requirements)
+      setEditorContent(fixTableHeaders(data.requirements))
       setHasChanges(true)
       showSuccess('Requisitos gerados', 'A IA analisou a tela e gerou os requisitos')
     } catch (error: any) {
@@ -276,22 +313,19 @@ export default function ProjectDetailPage() {
 
   const [exporting, setExporting] = useState(false)
 
-  // Quill editor modules config
-  const quillModules = useMemo(() => ({
-    toolbar: [
-      [{ 'header': [1, 2, 3, false] }],
-      ['bold', 'italic', 'underline'],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      [{ 'color': [] }, { 'background': [] }],
-      ['clean']
-    ],
-  }), [])
+  // TinyMCE editor reference
+  const editorRef = useRef<any>(null)
+
+  // Table headers are now styled via CSS (first row of table)
+  // This function is kept for backwards compatibility
+  const fixTableHeaders = (html: string): string => html
 
   // Extract body content from full HTML document
   const getBodyContent = (html: string): string => {
     if (!html) return ''
     const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i)
-    return bodyMatch ? bodyMatch[1] : html
+    const body = bodyMatch ? bodyMatch[1] : html
+    return fixTableHeaders(body)
   }
 
   // Wrap body content back into full HTML document
@@ -485,7 +519,7 @@ export default function ProjectDetailPage() {
                           status: 'documented'
                         }
                         setSelectedScreen(virtualScreen)
-                        setEditorContent(req.content)
+                        setEditorContent(fixTableHeaders(req.content))
                         setHasChanges(false)
                       }}
                     >
@@ -671,17 +705,38 @@ export default function ProjectDetailPage() {
                     )}
                   </div>
                 ) : (
-                  <div className="h-full flex flex-col overflow-hidden">
-                    <ReactQuill
-                      theme="snow"
+                  <div className="h-full flex flex-col overflow-hidden bg-white dark:bg-slate-800">
+                    <Editor
+                      tinymceScriptSrc="/tinymce/tinymce.min.js"
+                      onInit={(_evt, editor) => editorRef.current = editor}
                       value={getBodyContent(editorContent)}
-                      onChange={(content) => {
+                      onEditorChange={(content) => {
                         setEditorContent(wrapInHTML(content))
                         setHasChanges(true)
                       }}
-                      modules={quillModules}
-                      placeholder="Clique em 'Gerar com IA' para criar os requisitos automaticamente, ou edite aqui..."
-                      className="flex-1 overflow-auto"
+                      init={{
+                        height: '100%',
+                        menubar: false,
+                        plugins: [
+                          'lists', 'table', 'wordcount'
+                        ],
+                        toolbar: 'undo redo | blocks | bold italic underline | forecolor backcolor | bullist numlist | table | removeformat',
+                        content_style: `
+                          body { font-family: 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.6; padding: 16px; }
+                          h1 { color: #1e3a5f; font-size: 1.75rem; border-bottom: 2px solid #1e3a5f; padding-bottom: 0.5rem; }
+                          h2 { color: #1e3a5f; font-size: 1.375rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.5rem; margin-top: 1.5rem; }
+                          h3 { color: #2c5282; font-size: 1.125rem; margin-top: 1rem; }
+                          table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+                          th, td { border: 1px solid #e2e8f0; padding: 8px 12px; text-align: left; }
+                          th, tr:first-child td { background-color: #1e3a5f; color: white; font-weight: 600; }
+                          tr:nth-child(even):not(:first-child) { background-color: #f8fafc; }
+                        `,
+                        skin: 'oxide',
+                        content_css: false,
+                        branding: false,
+                        promotion: false
+                      }}
+                      licenseKey="gpl"
                     />
                   </div>
                 )}
@@ -866,11 +921,20 @@ export default function ProjectDetailPage() {
                 />
                 <div
                   onClick={() => addScreenFileInputRef.current?.click()}
-                  className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-6 text-center cursor-pointer hover:border-primary-400 dark:hover:border-primary-500 transition-colors"
+                  onPaste={handlePaste}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  tabIndex={0}
+                  className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors focus:outline-none ${
+                    isDragOver 
+                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' 
+                      : 'border-slate-300 dark:border-slate-600 hover:border-primary-400 dark:hover:border-primary-500 focus:border-primary-400 dark:focus:border-primary-500'
+                  }`}
                 >
-                  <Upload className="mx-auto text-slate-400 dark:text-slate-500 mb-2" size={32} />
+                  <Upload className={`mx-auto mb-2 ${isDragOver ? 'text-primary-500' : 'text-slate-400 dark:text-slate-500'}`} size={32} />
                   <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Clique para adicionar imagens
+                    {isDragOver ? 'Solte a imagem aqui' : 'Arraste, cole (Ctrl+V) ou clique'}
                   </p>
                   <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
                     PNG, JPG, GIF ou WebP

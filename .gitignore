@@ -3,6 +3,9 @@ node_modules/
 .pnp
 .pnp.js
 
+# TinyMCE (copied by postinstall)
+frontend/public/tinymce/
+
 # Build outputs
 dist/
 build/
