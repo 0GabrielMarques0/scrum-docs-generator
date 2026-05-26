@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Backend for Scrum Docs Generator - Figma to Requirements",
   "main": "dist/index.js",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "predev": "docker start scrum-mysql 2>nul || echo MySQL container not found",
     "dev": "tsx watch src/index.ts",
