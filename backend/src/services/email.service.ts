@@ -1,13 +1,7 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
-// Gmail SMTP configuration
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD, // Use App Password, not regular password
-  },
-});
+// Initialize Resend (will be null if not configured)
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 interface SendEmailOptions {
   to: string;
@@ -16,17 +10,19 @@ interface SendEmailOptions {
 }
 
 export async function sendEmail({ to, subject, html }: SendEmailOptions): Promise<boolean> {
-  // If email is not configured, just log and return
-  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-    console.log('[EMAIL] Not configured. Would send to:', to);
+  // If Resend is not configured, just log and return
+  if (!resend) {
+    console.log('[EMAIL] Resend not configured. Would send to:', to);
     console.log('[EMAIL] Subject:', subject);
     return false;
   }
 
   try {
-    await transporter.sendMail({
-      from: `"SpecAI" <${process.env.GMAIL_USER}>`,
-      to,
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+    
+    await resend.emails.send({
+      from: `SpecAI <${fromEmail}>`,
+      to: [to],
       subject,
       html,
     });

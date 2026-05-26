@@ -23,9 +23,9 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.1",
     "mysql2": "^3.6.5",
-    "nodemailer": "^8.0.9",
     "octokit": "^3.1.2",
     "pdfkit": "^0.14.0",
+    "resend": "^6.12.4",
     "swagger-jsdoc": "^6.3.0",
     "swagger-ui-express": "^5.0.1"
   },
@@ -36,7 +36,6 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.1.0",
     "@types/node": "^20.10.0",
-    "@types/nodemailer": "^8.0.0",
     "@types/pdfkit": "^0.13.3",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
