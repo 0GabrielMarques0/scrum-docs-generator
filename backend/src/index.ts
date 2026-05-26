@@ -27,7 +27,7 @@ const swaggerOptions = {
       description: 'API para geração de documentos de requisitos a partir de prints de telas',
     },
     servers: [
-      { url: `http://localhost:${PORT}`, description: 'Development server' },
+      { url: process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : `http://localhost:${PORT}`, description: 'Server' },
     ],
     components: {
       securitySchemes: {
