@@ -1,0 +1,362 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  overflow-y: scroll;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+html::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: #f8fafc;
+  transition: background-color 0.2s;
+}
+
+.dark body {
+  background-color: #0f172a;
+}
+
+.markdown-preview {
+  @apply prose prose-slate max-w-none;
+}
+
+.markdown-preview h1 {
+  @apply text-2xl font-bold text-slate-800 mb-4;
+}
+
+.markdown-preview h2 {
+  @apply text-xl font-semibold text-slate-700 mt-6 mb-3;
+}
+
+.markdown-preview h3 {
+  @apply text-lg font-medium text-slate-600 mt-4 mb-2;
+}
+
+.markdown-preview table {
+  @apply w-full border-collapse border border-slate-300 my-4;
+}
+
+.markdown-preview th,
+.markdown-preview td {
+  @apply border border-slate-300 px-4 py-2 text-left;
+}
+
+.markdown-preview th {
+  @apply bg-slate-100 font-semibold;
+}
+
+.markdown-preview ul {
+  @apply list-disc list-inside my-2;
+}
+
+.markdown-preview li {
+  @apply my-1;
+}
+
+/* Quill Editor Customization */
+.ql-container {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 14px;
+}
+
+/* Make Quill fill parent container */
+.quill {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.ql-toolbar {
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+  background-color: #f8fafc;
+  border-color: #e2e8f0 !important;
+  flex-shrink: 0;
+}
+
+.dark .ql-toolbar {
+  background-color: #1e293b;
+  border-color: #334155 !important;
+}
+
+.dark .ql-toolbar .ql-stroke {
+  stroke: #94a3b8;
+}
+
+.dark .ql-toolbar .ql-fill {
+  fill: #94a3b8;
+}
+
+.dark .ql-toolbar .ql-picker {
+  color: #94a3b8;
+}
+
+.dark .ql-toolbar .ql-picker-options {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+
+.dark .ql-toolbar button:hover .ql-stroke,
+.dark .ql-toolbar .ql-picker:hover .ql-stroke {
+  stroke: #e2e8f0;
+}
+
+.dark .ql-toolbar button:hover .ql-fill,
+.dark .ql-toolbar .ql-picker:hover .ql-fill {
+  fill: #e2e8f0;
+}
+
+.dark .ql-toolbar button.ql-active .ql-stroke {
+  stroke: #3b82f6;
+}
+
+.dark .ql-toolbar button.ql-active .ql-fill {
+  fill: #3b82f6;
+}
+
+.ql-container {
+  border-bottom-left-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+  border-color: #e2e8f0 !important;
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.dark .ql-container {
+  border-color: #334155 !important;
+  background-color: #0f172a;
+}
+
+.dark .ql-editor {
+  color: #e2e8f0;
+}
+
+.dark .ql-editor.ql-blank::before {
+  color: #64748b;
+}
+
+.ql-editor {
+  flex: 1;
+  line-height: 1.6;
+  overflow-y: auto !important;
+}
+
+.ql-editor h1 {
+  color: #1e3a5f;
+  font-size: 1.75rem;
+  border-bottom: 2px solid #1e3a5f;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.ql-editor h2 {
+  color: #1e3a5f;
+  font-size: 1.375rem;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.ql-editor h3 {
+  color: #2c5282;
+  font-size: 1.125rem;
+  margin-top: 1rem;
+}
+
+.ql-editor table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.ql-editor th {
+  background-color: #1e3a5f;
+  color: white;
+  padding: 0.75rem;
+  text-align: left;
+}
+
+.ql-editor td {
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.ql-editor tr:nth-child(even) {
+  background-color: #f8fafc;
+}
+
+.dark .ql-editor h1,
+.dark .ql-editor h2 {
+  color: #60a5fa;
+  border-color: #334155;
+}
+
+.dark .ql-editor h3 {
+  color: #93c5fd;
+}
+
+.dark .ql-editor th {
+  background-color: #1e3a5f;
+}
+
+.dark .ql-editor td {
+  border-color: #334155;
+}
+
+.dark .ql-editor tr:nth-child(even) {
+  background-color: #1e293b;
+}
+
+.ql-editor ul, .ql-editor ol {
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.ql-editor li {
+  margin: 0.25rem 0;
+}
+
+/* Page Transitions & Animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-scale {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes scale-in-bounce {
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.4s ease-out;
+}
+
+.animate-pulse-scale {
+  animation: pulse-scale 1.5s ease-in-out infinite;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+.animate-scale-in {
+  animation: scale-in-bounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.5s ease-out both;
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* Staggered animations for lists */
+.animate-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.animate-stagger > *:nth-child(2) { animation-delay: 50ms; }
+.animate-stagger > *:nth-child(3) { animation-delay: 100ms; }
+.animate-stagger > *:nth-child(4) { animation-delay: 150ms; }
+.animate-stagger > *:nth-child(5) { animation-delay: 200ms; }
+.animate-stagger > *:nth-child(6) { animation-delay: 250ms; }
+.animate-stagger > *:nth-child(n+7) { animation-delay: 300ms; }
+
+.animate-stagger > * {
+  animation: fade-in-up 0.4s ease-out backwards;
+}
+
+/* Modal animations */
+.modal-backdrop {
+  animation: fade-in 0.2s ease-out;
+}
+
+.modal-content {
+  animation: scale-in 0.2s ease-out;
+}
