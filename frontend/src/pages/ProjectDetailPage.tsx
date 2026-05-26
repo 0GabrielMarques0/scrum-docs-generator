@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { 
   ArrowLeft, FileText, Save, Loader2, 
@@ -7,6 +7,7 @@ import {
   X, FileType, File, ChevronDown, Code, Upload, Image, Plus
 } from 'lucide-react'
 import ReactQuill from 'react-quill-new'
+// @ts-ignore
 import 'react-quill-new/dist/quill.snow.css'
 import { saveAs } from 'file-saver'
 import { api } from '../services/api'
@@ -43,13 +44,11 @@ export default function ProjectDetailPage() {
   const navigate = useNavigate()
   const { showError, showWarning, showSuccess } = useToast()
   const { confirm } = useConfirm()
-  const fileInputRef = useRef<HTMLInputElement>(null)
   
   const [project, setProject] = useState<Project | null>(null)
   const [screens, setScreens] = useState<Screen[]>([])
   const [savedRequirements, setSavedRequirements] = useState<SavedRequirement[]>([])
   const [loading, setLoading] = useState(true)
-  const [uploading, setUploading] = useState(false)
   
   const [selectedScreen, setSelectedScreen] = useState<Screen | null>(null)
   const [editorContent, setEditorContent] = useState<string>('')
@@ -57,7 +56,6 @@ export default function ProjectDetailPage() {
   const [saving, setSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [viewMode, setViewMode] = useState<'preview' | 'edit'>('preview')
-  const [isDragOver, setIsDragOver] = useState(false)
 
   // New screen modal state
   const [showAddScreenModal, setShowAddScreenModal] = useState(false)
@@ -98,68 +96,6 @@ export default function ProjectDetailPage() {
       console.error('Error loading screens:', error)
     }
   }
-
-  const selectScreen = (screen: Screen) => {
-    const saved = savedRequirements.find(r => r.screen_id === screen.screen_id || r.screen_id === screen.id)
-    setSelectedScreen(screen)
-    setEditorContent(saved ? saved.content : '')
-    setHasChanges(false)
-  }
-
-  // Handle file upload
-  const handleFileUpload = async (files: FileList | File[]) => {
-    const fileArray = Array.from(files)
-    if (fileArray.length === 0) return
-
-    // Filter only images
-    const images = fileArray.filter(f => f.type.startsWith('image/'))
-    if (images.length === 0) {
-      showWarning('Formato inválido', 'Envie apenas imagens (PNG, JPG, GIF, WebP)')
-      return
-    }
-
-    try {
-      setUploading(true)
-      const formData = new FormData()
-      
-      images.forEach((file, index) => {
-        formData.append('images', file)
-        // Use filename without extension as screen name
-        const name = file.name.replace(/\.[^/.]+$/, '')
-        formData.append('names', name)
-      })
-
-      await api.post(`/screens/upload/${id}`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
-
-      showSuccess('Upload concluído', `${images.length} tela(s) adicionada(s)`)
-      loadScreens()
-    } catch (error: any) {
-      console.error('Error uploading:', error)
-      showError('Erro no upload', error.response?.data?.error || 'Falha ao enviar imagens')
-    } finally {
-      setUploading(false)
-    }
-  }
-
-  // Drag and drop handlers
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragOver(true)
-  }, [])
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragOver(false)
-  }, [])
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragOver(false)
-    const files = e.dataTransfer.files
-    handleFileUpload(files)
-  }, [id])
 
   // Add Screen Modal functions
   const openAddScreenModal = () => {
@@ -311,31 +247,6 @@ export default function ProjectDetailPage() {
     }
   }
 
-  const deleteScreen = async (screenId: string) => {
-    const confirmed = await confirm({
-      title: 'Excluir tela',
-      message: 'Excluir esta tela? A imagem e os requisitos associados serão removidos.',
-      confirmText: 'Excluir',
-      cancelText: 'Cancelar',
-      danger: true
-    })
-    
-    if (!confirmed) return
-    
-    try {
-      await api.delete(`/screens/${screenId}`)
-      setScreens(prev => prev.filter(s => s.id !== screenId))
-      
-      if (selectedScreen?.id === screenId) {
-        setSelectedScreen(null)
-        setEditorContent('')
-      }
-      showSuccess('Removida', 'Tela removida com sucesso')
-    } catch (error) {
-      console.error('Error deleting screen:', error)
-    }
-  }
-
   const deleteRequirement = async (reqId: string) => {
     const confirmed = await confirm({
       title: 'Excluir documento',
@@ -452,10 +363,6 @@ export default function ProjectDetailPage() {
     } finally {
       setExporting(false)
     }
-  }
-
-  const getScreenStatus = (screen: Screen) => {
-    return savedRequirements.some(r => r.screen_id === screen.id || r.screen_id === screen.screen_id) ? 'documented' : 'pending'
   }
 
   const downloadIndividual = async (format: 'html' | 'docx' | 'pdf') => {
