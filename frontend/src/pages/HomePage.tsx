@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Zap, Sparkles, Layers, Edit3, FileType, Eye, Upload } from 'lucide-react'
+import { Sparkles, Layers, Edit3, FileType, Eye, Upload } from 'lucide-react'
 
 export default function HomePage() {
   const features = [

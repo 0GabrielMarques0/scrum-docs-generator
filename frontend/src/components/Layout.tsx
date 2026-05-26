@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { FolderOpen, Home, Moon, Sun, LogOut, User, X, AlertTriangle } from 'lucide-react'
+import { FolderOpen, Home, Moon, Sun, LogOut, User, X } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../contexts/AuthContext'
