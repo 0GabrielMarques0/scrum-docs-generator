@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { db } from '../database/init.js';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import { aiService } from '../services/ai.service.js';
-import HTMLtoDOCX from 'html-to-docx';
+import { htmlToDocx, htmlToPdf } from '../services/document.service.js';
 
 const router = Router();
 
@@ -358,34 +358,18 @@ router.get('/:id/export', async (req, res) => {
     
     // Generate combined HTML document
     const html = generateCombinedDocument(project, requirements);
+    const fileName = `documento-requisitos-${project.name.replace(/\s+/g, '-').toLowerCase()}`;
     
     if (format === 'docx') {
-      // Convert to DOCX
-      // Add specific styles for DOCX conversion
-      const docxHtml = html.replace(/<style>[\s\S]*?<\/style>/i, `<style>
-        body { font-family: Arial, sans-serif; font-size: 11pt; line-height: 1.5; }
-        h1 { font-size: 18pt; color: #1e3a5f; }
-        h2 { font-size: 14pt; color: #1e3a5f; margin-top: 20pt; }
-        h3 { font-size: 12pt; color: #2c5282; margin-top: 15pt; }
-        table { width: 100%; border-collapse: collapse; margin: 10pt 0; }
-        th { background-color: #1e3a5f; color: white; padding: 8pt; text-align: left; border: 1pt solid #1e3a5f; }
-        td { padding: 6pt 8pt; border: 1pt solid #e2e8f0; }
-        tr:nth-child(even) { background-color: #f8fafc; }
-        ul { margin: 5pt 0; padding-left: 20pt; }
-        li { margin: 3pt 0; }
-        p { margin: 5pt 0; }
-      </style>`);
-      const docxBuffer = await HTMLtoDOCX(docxHtml, null, {
-        table: { row: { cantSplit: true } },
-        footer: true,
-        pageNumber: true,
-        margins: { top: 1440, right: 1440, bottom: 1440, left: 1440 },
-      });
-      
-      const fileName = `documento-requisitos-${project.name.replace(/\s+/g, '-').toLowerCase()}.docx`;
+      const docxBuffer = await htmlToDocx(html, `Requisitos - ${project.name}`);
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-      res.send(Buffer.from(docxBuffer as ArrayBuffer));
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}.docx"`);
+      res.send(docxBuffer);
+    } else if (format === 'pdf') {
+      const pdfBuffer = await htmlToPdf(html);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}.pdf"`);
+      res.send(pdfBuffer);
     } else {
       res.json({ html, screenCount: requirements.length });
     }
@@ -400,38 +384,26 @@ router.get('/:id/export', async (req, res) => {
  */
 router.post('/:id/export-single', async (req: Request, res: Response) => {
   try {
-    const { html, screenName } = req.body;
+    const { html, screenName, format } = req.body;
     
     if (!html) {
       return res.status(400).json({ error: 'HTML content is required' });
     }
     
-    // Add specific styles for DOCX conversion
-    const docxHtml = html.replace(/<style>[\s\S]*?<\/style>/i, `<style>
-      body { font-family: Arial, sans-serif; font-size: 11pt; line-height: 1.5; }
-      h1 { font-size: 18pt; color: #1e3a5f; }
-      h2 { font-size: 14pt; color: #1e3a5f; margin-top: 20pt; }
-      h3 { font-size: 12pt; color: #2c5282; margin-top: 15pt; }
-      table { width: 100%; border-collapse: collapse; margin: 10pt 0; }
-      th { background-color: #1e3a5f; color: white; padding: 8pt; text-align: left; border: 1pt solid #1e3a5f; }
-      td { padding: 6pt 8pt; border: 1pt solid #e2e8f0; }
-      tr:nth-child(even) { background-color: #f8fafc; }
-      ul { margin: 5pt 0; padding-left: 20pt; }
-      li { margin: 3pt 0; }
-      p { margin: 5pt 0; }
-    </style>`);
+    const exportFormat = format || 'docx';
+    const fileName = `requisitos-${(screenName || 'documento').replace(/\s+/g, '-').toLowerCase()}`;
     
-    const docxBuffer = await HTMLtoDOCX(docxHtml, null, {
-      table: { row: { cantSplit: true } },
-      footer: true,
-      pageNumber: true,
-      margins: { top: 1440, right: 1440, bottom: 1440, left: 1440 },
-    });
-    
-    const fileName = `requisitos-${(screenName || 'documento').replace(/\s+/g, '-').toLowerCase()}.docx`;
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-    res.send(Buffer.from(docxBuffer as ArrayBuffer));
+    if (exportFormat === 'pdf') {
+      const pdfBuffer = await htmlToPdf(html);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}.pdf"`);
+      res.send(pdfBuffer);
+    } else {
+      const docxBuffer = await htmlToDocx(html, `Requisitos - ${screenName || 'Documento'}`);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}.docx"`);
+      res.send(docxBuffer);
+    }
   } catch (error: any) {
     console.error('Error exporting single screen:', error.message);
     res.status(500).json({ error: error.message || 'Erro ao exportar documento' });
@@ -552,27 +524,19 @@ function generateCombinedDocument(project: any, requirements: any[]): string {
   html += `<div class="toc">
     <h3>Sumário</h3>
     <ul>
-      <li>
-        <a href="#intro">1. Introdução</a>
-        <ul>
-          <li><a href="#intro-objetivo">1.1 Objetivo</a></li>
-          <li><a href="#intro-escopo">1.2 Escopo</a></li>
-          <li><a href="#intro-definicoes">1.3 Definições e Siglas</a></li>
-        </ul>
-      </li>
+      <li><a href="#intro">1. Introdução</a></li>
+      <li style="padding-left: 20px;"><a href="#intro-objetivo">1.1 Objetivo</a></li>
+      <li style="padding-left: 20px;"><a href="#intro-escopo">1.2 Escopo</a></li>
+      <li style="padding-left: 20px;"><a href="#intro-definicoes">1.3 Definições e Siglas</a></li>
   `;
   
   requirements.forEach((req, index) => {
     const sectionNum = index + 2;
-    html += `<li>
-        <a href="#screen-${sectionNum}">${sectionNum}. ${req.screen_name}</a>
-        <ul>
-          <li><a href="#screen-${sectionNum}-desc">${sectionNum}.1 Descrição Geral</a></li>
-          <li><a href="#screen-${sectionNum}-rf">${sectionNum}.2 Requisitos Funcionais</a></li>
-          <li><a href="#screen-${sectionNum}-rnf">${sectionNum}.3 Requisitos Não Funcionais</a></li>
-          <li><a href="#screen-${sectionNum}-rn">${sectionNum}.4 Regras de Negócio</a></li>
-        </ul>
-      </li>\n`;
+    html += `<li><a href="#screen-${sectionNum}">${sectionNum}. ${req.screen_name}</a></li>
+      <li style="padding-left: 20px;"><a href="#screen-${sectionNum}-desc">${sectionNum}.1 Descrição Geral</a></li>
+      <li style="padding-left: 20px;"><a href="#screen-${sectionNum}-rf">${sectionNum}.2 Requisitos Funcionais</a></li>
+      <li style="padding-left: 20px;"><a href="#screen-${sectionNum}-rnf">${sectionNum}.3 Requisitos Não Funcionais</a></li>
+      <li style="padding-left: 20px;"><a href="#screen-${sectionNum}-rn">${sectionNum}.4 Regras de Negócio</a></li>\n`;
   });
   
   html += `</ul>

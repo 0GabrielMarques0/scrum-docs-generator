@@ -305,15 +305,15 @@ O documento deve seguir EXATAMENTE este formato:
    - Se a regra não tiver mensagem de sistema, coloque "-" na coluna Mensagem
 
 IMPORTANTE:
-- Use HTML bem formatado com estilos inline
+- Use HTML bem formatado com estilos INLINE em cada elemento
 - Fundo do body deve ser BRANCO (#ffffff)
-- Headers em azul escuro (#1e3a5f)
-- Tabelas com bordas cinza (#e2e8f0)
-- Tabelas devem ter style="table-layout: fixed; width: 100%;"
+- Tabelas devem ter style="table-layout: fixed; width: 100%; border-collapse: collapse;"
+- CABEÇALHOS DE TABELA (th) DEVEM TER OBRIGATORIAMENTE: style="background-color: #1e3a5f; color: white; padding: 12px; text-align: left; border: 1px solid #1e3a5f;"
+- CÉLULAS DE TABELA (td) DEVEM TER: style="padding: 10px; border: 1px solid #e2e8f0;"
 - ESTRUTURA DA TABELA DE RF OBRIGATÓRIA:
-  <table><thead><tr><th>ID</th><th>Requisito</th><th>Descrição</th></tr></thead><tbody><tr><td>RF-01</td><td>Nome</td><td>Descrição</td></tr></tbody></table>
+  <table style="table-layout: fixed; width: 100%; border-collapse: collapse;"><thead><tr><th style="background-color: #1e3a5f; color: white; padding: 12px; text-align: left; border: 1px solid #1e3a5f;">ID</th><th style="background-color: #1e3a5f; color: white; padding: 12px; text-align: left; border: 1px solid #1e3a5f;">Requisito</th><th style="background-color: #1e3a5f; color: white; padding: 12px; text-align: left; border: 1px solid #1e3a5f;">Descrição</th></tr></thead><tbody><tr><td style="padding: 10px; border: 1px solid #e2e8f0;">RF-01</td><td style="padding: 10px; border: 1px solid #e2e8f0;">Nome</td><td style="padding: 10px; border: 1px solid #e2e8f0;">Descrição</td></tr></tbody></table>
 - ESTRUTURA DA TABELA DE RN OBRIGATÓRIA:
-  <table><thead><tr><th>ID</th><th>Descrição</th><th>Mensagem</th></tr></thead><tbody><tr><td>RN-01</td><td>Descrição da regra</td><td>Mensagem ou -</td></tr></tbody></table>
+  <table style="table-layout: fixed; width: 100%; border-collapse: collapse;"><thead><tr><th style="background-color: #1e3a5f; color: white; padding: 12px; text-align: left; border: 1px solid #1e3a5f;">ID</th><th style="background-color: #1e3a5f; color: white; padding: 12px; text-align: left; border: 1px solid #1e3a5f;">Descrição</th><th style="background-color: #1e3a5f; color: white; padding: 12px; text-align: left; border: 1px solid #1e3a5f;">Mensagem</th></tr></thead><tbody><tr><td style="padding: 10px; border: 1px solid #e2e8f0;">RN-01</td><td style="padding: 10px; border: 1px solid #e2e8f0;">Descrição da regra</td><td style="padding: 10px; border: 1px solid #e2e8f0;">Mensagem ou -</td></tr></tbody></table>
 - NUNCA coloque múltiplos headers numa única célula <th>
 - Descrições devem ser CONCISAS (máximo 2 linhas)
 - NÃO inclua cenários de teste, integrações/APIs ou histórico de revisões`;
@@ -449,15 +449,15 @@ O documento deve seguir EXATAMENTE este formato:
    - Se a regra não tiver mensagem de sistema, coloque "-" na coluna Mensagem
 
 IMPORTANTE:
-- Use HTML bem formatado com estilos inline
+- Use HTML bem formatado com estilos INLINE em cada elemento
 - Fundo do body deve ser BRANCO (#ffffff)
-- Headers em azul escuro (#1e3a5f)
-- Tabelas com bordas cinza (#e2e8f0)
-- Tabelas devem ter style="table-layout: fixed; width: 100%;"
+- Tabelas devem ter style="table-layout: fixed; width: 100%; border-collapse: collapse;"
+- CABEÇALHOS DE TABELA (th) DEVEM TER OBRIGATORIAMENTE: style="background-color: #1e3a5f; color: white; padding: 12px; text-align: left; border: 1px solid #1e3a5f;"
+- CÉLULAS DE TABELA (td) DEVEM TER: style="padding: 10px; border: 1px solid #e2e8f0;"
 - ESTRUTURA DA TABELA DE RF OBRIGATÓRIA:
-  <table><thead><tr><th>ID</th><th>Requisito</th><th>Descrição</th></tr></thead><tbody><tr><td>RF-01</td><td>Nome</td><td>Descrição</td></tr></tbody></table>
+  <table style="table-layout: fixed; width: 100%; border-collapse: collapse;"><thead><tr><th style="background-color: #1e3a5f; color: white; padding: 12px; text-align: left; border: 1px solid #1e3a5f;">ID</th><th style="background-color: #1e3a5f; color: white; padding: 12px; text-align: left; border: 1px solid #1e3a5f;">Requisito</th><th style="background-color: #1e3a5f; color: white; padding: 12px; text-align: left; border: 1px solid #1e3a5f;">Descrição</th></tr></thead><tbody><tr><td style="padding: 10px; border: 1px solid #e2e8f0;">RF-01</td><td style="padding: 10px; border: 1px solid #e2e8f0;">Nome</td><td style="padding: 10px; border: 1px solid #e2e8f0;">Descrição</td></tr></tbody></table>
 - ESTRUTURA DA TABELA DE RN OBRIGATÓRIA:
-  <table><thead><tr><th>ID</th><th>Descrição</th><th>Mensagem</th></tr></thead><tbody><tr><td>RN-01</td><td>Descrição da regra</td><td>Mensagem ou -</td></tr></tbody></table>
+  <table style="table-layout: fixed; width: 100%; border-collapse: collapse;"><thead><tr><th style="background-color: #1e3a5f; color: white; padding: 12px; text-align: left; border: 1px solid #1e3a5f;">ID</th><th style="background-color: #1e3a5f; color: white; padding: 12px; text-align: left; border: 1px solid #1e3a5f;">Descrição</th><th style="background-color: #1e3a5f; color: white; padding: 12px; text-align: left; border: 1px solid #1e3a5f;">Mensagem</th></tr></thead><tbody><tr><td style="padding: 10px; border: 1px solid #e2e8f0;">RN-01</td><td style="padding: 10px; border: 1px solid #e2e8f0;">Descrição da regra</td><td style="padding: 10px; border: 1px solid #e2e8f0;">Mensagem ou -</td></tr></tbody></table>
 - NUNCA coloque múltiplos headers numa única célula <th>
 - Descrições devem ser CONCISAS (máximo 2 linhas)
 - NÃO inclua cenários de teste, integrações/APIs ou histórico de revisões`;
