@@ -8,7 +8,7 @@ import { sendTemporaryPasswordEmail } from '../services/email.service.js';
 const router = Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'scrum-docs-secret-key-change-in-production';
-const JWT_EXPIRES_IN = '7d';
+const JWT_EXPIRES_IN = '30d'; // 30 days
 
 interface User {
   id: string;

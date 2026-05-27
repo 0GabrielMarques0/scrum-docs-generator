@@ -26,19 +26,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Load auth state from localStorage on mount
+  // Load auth state from localStorage on mount and validate token
   useEffect(() => {
-    const storedToken = localStorage.getItem(TOKEN_KEY)
-    const storedUser = localStorage.getItem(USER_KEY)
-    
-    if (storedToken && storedUser) {
-      setToken(storedToken)
-      setUser(JSON.parse(storedUser))
-      // Set token in axios defaults
-      api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`
+    const validateAndLoadAuth = async () => {
+      const storedToken = localStorage.getItem(TOKEN_KEY)
+      const storedUser = localStorage.getItem(USER_KEY)
+      
+      if (storedToken && storedUser) {
+        // Set token in axios defaults first
+        api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`
+        
+        try {
+          // Validate token by calling /auth/me
+          const { data } = await api.get('/auth/me')
+          setToken(storedToken)
+          setUser(data)
+          // Update stored user with fresh data
+          localStorage.setItem(USER_KEY, JSON.stringify(data))
+        } catch (error) {
+          // Token is invalid or expired, clear auth
+          console.warn('Token validation failed, clearing auth...')
+          localStorage.removeItem(TOKEN_KEY)
+          localStorage.removeItem(USER_KEY)
+          delete api.defaults.headers.common['Authorization']
+        }
+      }
+      
+      setIsLoading(false)
     }
     
-    setIsLoading(false)
+    validateAndLoadAuth()
   }, [])
 
   const login = async (email: string, password: string) => {

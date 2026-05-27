@@ -248,17 +248,33 @@ Você gera documentos profissionais de requisitos no padrão de documentação t
 Seja objetivo, detalhado e use linguagem formal.
 
 IMPORTANTE: Algumas imagens podem conter um quadro/box separado com "Rules" ou "Regras de negócio". 
-Se identificar esse quadro, você DEVE extrair as regras escritas nele e incorporá-las nos requisitos funcionais.
-Essas regras são especificações fornecidas pelo cliente e têm prioridade máxima.`;
+Se identificar esse quadro, você DEVE extrair as regras escritas nele e classificá-las corretamente.
+
+CLASSIFICAÇÃO OBRIGATÓRIA - Você DEVE separar corretamente:
+
+**REQUISITOS FUNCIONAIS (RF)** - Descrevem O QUE o sistema FAZ (ações, comportamentos, funcionalidades):
+- "O sistema deve validar as credenciais e iniciar uma sessão"
+- "O formulário deve ter um botão para exibir/ocultar a senha"
+- "O formulário deve ter um checkbox 'Remember me' para manter o usuário logado"
+- "O formulário deve fornecer um link 'Forgot password' que direciona ao fluxo de recuperação"
+
+**REGRAS DE NEGÓCIO (RN)** - Descrevem COMO os campos devem ser preenchidos, validações, restrições e mensagens:
+- "O campo Email deve ser de preenchimento obrigatório"
+- "O Email deve ser preenchido com um formato válido"
+- "O Password deve conter no mínimo 8 caracteres com 1 maiúscula, 1 minúscula, 1 número e 1 especial"
+- "Ao clicar em 'Log in' se o Email estiver em branco, exibir 'Invalid e-mail address'"`;
 
     const userPrompt = `Analise esta tela "${screenName}" do projeto "${projectName}" e gere um documento de requisitos funcionais em HTML.
 
 PRIMEIRO: Verifique se há um quadro/box de "Rules" ou "Regras de negócio" na imagem. Se houver:
 - Leia TODAS as regras escritas nesse quadro
-- Transforme cada regra em um requisito funcional com descrição detalhada
-- Essas regras devem aparecer primeiro na tabela de requisitos
+- CLASSIFIQUE cada regra como Requisito Funcional OU Regra de Negócio conforme as definições abaixo
 
-DEPOIS: Analise os elementos visuais da tela (campos, botões, tabelas, etc.) e gere requisitos adicionais.
+CLASSIFICAÇÃO:
+- **Requisitos Funcionais**: Ações que o sistema EXECUTA (validar, exibir botão, fornecer link, iniciar sessão, direcionar usuário)
+- **Regras de Negócio**: Validações de campos, formatos, obrigatoriedades, mensagens de erro
+
+DEPOIS: Analise os elementos visuais da tela e gere requisitos adicionais.
 
 O documento deve seguir EXATAMENTE este formato:
 
@@ -270,23 +286,23 @@ O documento deve seguir EXATAMENTE este formato:
    - ID (RF-01, RF-02, etc.)
    - Requisito (nome curto)
    - Descrição (descrição detalhada do requisito)
-   - Obrigatório (Sim, Não, ou - se não tiver certeza)
 
 4. **Requisitos Não Funcionais** em tabela com colunas:
    - ID (RNF-01, RNF-02, etc.)
    - Requisito (nome curto)
    - Descrição (descrição detalhada)
-   - Obrigatório (Sim, Não, ou - se não tiver certeza)
 
-5. **Regras de Negócio** - Lista de regras específicas desta tela
-   - Se houver um quadro de "Rules" na imagem, extraia TODAS as regras dele
-   - Se NÃO houver quadro de regras, CRIE regras de negócio baseadas no tipo de tela:
-     * Tela de login: validação de credenciais, tentativas máximas, bloqueio de conta, etc.
-     * Tela de cadastro: campos obrigatórios, formato de email, força de senha, etc.
-     * Tela de listagem: paginação, filtros, ordenação, permissões de acesso, etc.
-     * Formulários: validações de campos, máscaras, dependências entre campos, etc.
-   - SEMPRE gere pelo menos 3 regras de negócio relevantes para a tela
-   - Formato: lista com bullet points (RN-01: descrição, RN-02: descrição, etc.)
+5. **Regras de Negócio** em TABELA com colunas:
+   - ID (RN-01, RN-02, etc.)
+   - Descrição (a regra completa)
+   - Mensagem (mensagem de validação do sistema, se houver na regra. Se não houver, deixe "-")
+
+   IMPORTANTE para a coluna Mensagem:
+   - Extraia a mensagem que aparece entre aspas no final da regra
+   - Exemplo: "Ao clicar em 'Log in' se o campo Email estiver em branco o sistema deve exibir a mensagem 'Invalid e-mail address'"
+     → Descrição: "Ao clicar em 'Log in' se o campo Email estiver em branco o sistema deve exibir mensagem de validação"
+     → Mensagem: "Invalid e-mail address"
+   - Se a regra não tiver mensagem de sistema, coloque "-" na coluna Mensagem
 
 IMPORTANTE:
 - Use HTML bem formatado com estilos inline
@@ -294,8 +310,10 @@ IMPORTANTE:
 - Headers em azul escuro (#1e3a5f)
 - Tabelas com bordas cinza (#e2e8f0)
 - Tabelas devem ter style="table-layout: fixed; width: 100%;"
-- ESTRUTURA DA TABELA OBRIGATÓRIA - cada coluna em tag separada:
-  <table><thead><tr><th>ID</th><th>Requisito</th><th>Descrição</th><th>Obrigatório</th></tr></thead><tbody><tr><td>RF-01</td><td>Nome</td><td>Descrição</td><td>Sim</td></tr></tbody></table>
+- ESTRUTURA DA TABELA DE RF OBRIGATÓRIA:
+  <table><thead><tr><th>ID</th><th>Requisito</th><th>Descrição</th></tr></thead><tbody><tr><td>RF-01</td><td>Nome</td><td>Descrição</td></tr></tbody></table>
+- ESTRUTURA DA TABELA DE RN OBRIGATÓRIA:
+  <table><thead><tr><th>ID</th><th>Descrição</th><th>Mensagem</th></tr></thead><tbody><tr><td>RN-01</td><td>Descrição da regra</td><td>Mensagem ou -</td></tr></tbody></table>
 - NUNCA coloque múltiplos headers numa única célula <th>
 - Descrições devem ser CONCISAS (máximo 2 linhas)
 - NÃO inclua cenários de teste, integrações/APIs ou histórico de revisões`;
@@ -374,17 +392,33 @@ Analise TODAS as imagens fornecidas como se fossem diferentes partes ou estados 
 Seja objetivo, detalhado e use linguagem formal.
 
 IMPORTANTE: Algumas imagens podem conter um quadro/box separado com "Rules" ou "Regras de negócio". 
-Se identificar esse quadro em qualquer uma das imagens, você DEVE extrair as regras escritas nele e incorporá-las nos requisitos funcionais.
-Essas regras são especificações fornecidas pelo cliente e têm prioridade máxima.`;
+Se identificar esse quadro em qualquer uma das imagens, você DEVE extrair as regras e classificá-las corretamente.
+
+CLASSIFICAÇÃO OBRIGATÓRIA - Você DEVE separar corretamente:
+
+**REQUISITOS FUNCIONAIS (RF)** - Descrevem O QUE o sistema FAZ (ações, comportamentos, funcionalidades):
+- "O sistema deve validar as credenciais e iniciar uma sessão"
+- "O formulário deve ter um botão para exibir/ocultar a senha"
+- "O formulário deve ter um checkbox 'Remember me' para manter o usuário logado"
+- "O formulário deve fornecer um link 'Forgot password' que direciona ao fluxo de recuperação"
+
+**REGRAS DE NEGÓCIO (RN)** - Descrevem COMO os campos devem ser preenchidos, validações, restrições e mensagens:
+- "O campo Email deve ser de preenchimento obrigatório"
+- "O Email deve ser preenchido com um formato válido"
+- "O Password deve conter no mínimo 8 caracteres com 1 maiúscula, 1 minúscula, 1 número e 1 especial"
+- "Ao clicar em 'Log in' se o Email estiver em branco, exibir 'Invalid e-mail address'"`;
 
     const userPrompt = `Analise estas ${images.length} imagem(ns) da tela "${screenName}" do projeto "${projectName}" e gere um documento de requisitos funcionais em HTML.
 
 PRIMEIRO: Verifique se há um quadro/box de "Rules" ou "Regras de negócio" em alguma das imagens. Se houver:
 - Leia TODAS as regras escritas nesse quadro
-- Transforme cada regra em um requisito funcional com descrição detalhada
-- Essas regras devem aparecer primeiro na tabela de requisitos
+- CLASSIFIQUE cada regra como Requisito Funcional OU Regra de Negócio conforme as definições abaixo
 
-DEPOIS: Analise os elementos visuais da tela (campos, botões, tabelas, etc.) e gere requisitos adicionais.
+CLASSIFICAÇÃO:
+- **Requisitos Funcionais**: Ações que o sistema EXECUTA (validar, exibir botão, fornecer link, iniciar sessão, direcionar usuário)
+- **Regras de Negócio**: Validações de campos, formatos, obrigatoriedades, mensagens de erro
+
+DEPOIS: Analise os elementos visuais da tela e gere requisitos adicionais.
 
 O documento deve seguir EXATAMENTE este formato:
 
@@ -396,23 +430,23 @@ O documento deve seguir EXATAMENTE este formato:
    - ID (RF-01, RF-02, etc.)
    - Requisito (nome curto)
    - Descrição (descrição detalhada do requisito)
-   - Obrigatório (Sim, Não, ou - se não tiver certeza)
 
 4. **Requisitos Não Funcionais** em tabela com colunas:
    - ID (RNF-01, RNF-02, etc.)
    - Requisito (nome curto)
    - Descrição (descrição detalhada)
-   - Obrigatório (Sim, Não, ou - se não tiver certeza)
 
-5. **Regras de Negócio** - Lista de regras específicas desta tela
-   - Se houver um quadro de "Rules" na imagem, extraia TODAS as regras dele
-   - Se NÃO houver quadro de regras, CRIE regras de negócio baseadas no tipo de tela:
-     * Tela de login: validação de credenciais, tentativas máximas, bloqueio de conta, etc.
-     * Tela de cadastro: campos obrigatórios, formato de email, força de senha, etc.
-     * Tela de listagem: paginação, filtros, ordenação, permissões de acesso, etc.
-     * Formulários: validações de campos, máscaras, dependências entre campos, etc.
-   - SEMPRE gere pelo menos 3 regras de negócio relevantes para a tela
-   - Formato: lista com bullet points (RN-01: descrição, RN-02: descrição, etc.)
+5. **Regras de Negócio** em TABELA com colunas:
+   - ID (RN-01, RN-02, etc.)
+   - Descrição (a regra completa)
+   - Mensagem (mensagem de validação do sistema, se houver na regra. Se não houver, deixe "-")
+
+   IMPORTANTE para a coluna Mensagem:
+   - Extraia a mensagem que aparece entre aspas no final da regra
+   - Exemplo: "Ao clicar em 'Log in' se o campo Email estiver em branco o sistema deve exibir a mensagem 'Invalid e-mail address'"
+     → Descrição: "Ao clicar em 'Log in' se o campo Email estiver em branco o sistema deve exibir mensagem de validação"
+     → Mensagem: "Invalid e-mail address"
+   - Se a regra não tiver mensagem de sistema, coloque "-" na coluna Mensagem
 
 IMPORTANTE:
 - Use HTML bem formatado com estilos inline
@@ -420,8 +454,10 @@ IMPORTANTE:
 - Headers em azul escuro (#1e3a5f)
 - Tabelas com bordas cinza (#e2e8f0)
 - Tabelas devem ter style="table-layout: fixed; width: 100%;"
-- ESTRUTURA DA TABELA OBRIGATÓRIA - cada coluna em tag separada:
-  <table><thead><tr><th>ID</th><th>Requisito</th><th>Descrição</th><th>Obrigatório</th></tr></thead><tbody><tr><td>RF-01</td><td>Nome</td><td>Descrição</td><td>Sim</td></tr></tbody></table>
+- ESTRUTURA DA TABELA DE RF OBRIGATÓRIA:
+  <table><thead><tr><th>ID</th><th>Requisito</th><th>Descrição</th></tr></thead><tbody><tr><td>RF-01</td><td>Nome</td><td>Descrição</td></tr></tbody></table>
+- ESTRUTURA DA TABELA DE RN OBRIGATÓRIA:
+  <table><thead><tr><th>ID</th><th>Descrição</th><th>Mensagem</th></tr></thead><tbody><tr><td>RN-01</td><td>Descrição da regra</td><td>Mensagem ou -</td></tr></tbody></table>
 - NUNCA coloque múltiplos headers numa única célula <th>
 - Descrições devem ser CONCISAS (máximo 2 linhas)
 - NÃO inclua cenários de teste, integrações/APIs ou histórico de revisões`;

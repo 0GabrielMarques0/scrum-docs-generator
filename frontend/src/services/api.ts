@@ -22,11 +22,19 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Only logout on 401 if user was logged in and not on auth endpoints
     if (error.response?.status === 401) {
-      // Clear auth data and redirect to login
-      localStorage.removeItem('auth_token')
-      localStorage.removeItem('auth_user')
-      window.location.href = '/login'
+      const isAuthEndpoint = error.config?.url?.includes('/auth/')
+      const hasToken = localStorage.getItem('auth_token')
+      
+      // Only auto-logout if user had a token and it's not an auth request
+      if (hasToken && !isAuthEndpoint) {
+        console.warn('Session expired, redirecting to login...')
+        localStorage.removeItem('auth_token')
+        localStorage.removeItem('auth_user')
+        // Use replace to prevent back button issues
+        window.location.replace('/login')
+      }
     }
     console.error('API Error:', error.response?.data || error.message)
     return Promise.reject(error)

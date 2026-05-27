@@ -442,7 +442,7 @@ export default function ProjectDetailPage() {
     return (
       <div className="text-center py-12 animate-fade-in">
         <p className="text-slate-500 dark:text-slate-400">Projeto não encontrado</p>
-        <button onClick={() => navigate('/projects')} className="text-primary-600 mt-4">
+        <button onClick={() => navigate('/app/projects')} className="text-primary-600 mt-4">
           Voltar para projetos
         </button>
       </div>
@@ -454,7 +454,7 @@ export default function ProjectDetailPage() {
       {/* Header */}
       <div className="flex items-center gap-4 mb-4">
         <button
-          onClick={() => navigate('/projects')}
+          onClick={() => navigate('/app/projects')}
           className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300"
         >
           <ArrowLeft size={20} />
