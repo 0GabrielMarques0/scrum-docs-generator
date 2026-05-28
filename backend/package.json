@@ -4,7 +4,7 @@
   "description": "Backend for Scrum Docs Generator - Figma to Requirements",
   "main": "dist/index.js",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "predev": "docker start scrum-mysql 2>nul || echo MySQL container not found",

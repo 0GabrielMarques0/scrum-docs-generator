@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["nodejs_20", "npm-9_x", "chromium"]
+nixPkgs = ["nodejs_22", "chromium", "unzip"]
 
 [phases.install]
 cmds = ["npm install"]
@@ -11,5 +11,5 @@ cmds = ["npm run build"]
 cmd = "npm run start"
 
 [variables]
-PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
+PUPPETEER_SKIP_DOWNLOAD = "true"
 PUPPETEER_EXECUTABLE_PATH = "/nix/var/nix/profiles/default/bin/chromium"
