@@ -6,14 +6,26 @@ import { htmlToDocx, htmlToPdf } from '../services/document.service.js';
 
 const router = Router();
 
+// Helper to verify project ownership
+async function verifyProjectOwnership(projectId: string, userId: string): Promise<boolean> {
+  const [projects] = await db.execute<RowDataPacket[]>(
+    'SELECT id FROM projects WHERE id = ? AND user_id = ?',
+    [projectId, userId]
+  );
+  return projects.length > 0;
+}
+
 /**
  * GET /api/projects
- * List all projects
+ * List all projects for the authenticated user
  */
 router.get('/', async (req, res) => {
   try {
+    const userId = (req as any).user?.userId;
+    
     const [projects] = await db.execute<RowDataPacket[]>(
-      'SELECT * FROM projects ORDER BY updated_at DESC'
+      'SELECT * FROM projects WHERE user_id = ? ORDER BY updated_at DESC',
+      [userId]
     );
     
     res.json({ projects });
@@ -25,10 +37,11 @@ router.get('/', async (req, res) => {
 
 /**
  * POST /api/projects
- * Create a new project
+ * Create a new project for the authenticated user
  */
 router.post('/', async (req, res) => {
   try {
+    const userId = (req as any).user?.userId;
     const { name, figmaFileKey, figmaUrl, description } = req.body;
     
     if (!name) {
@@ -39,9 +52,9 @@ router.post('/', async (req, res) => {
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
     
     await db.execute(
-      `INSERT INTO projects (id, name, figma_file_key, figma_url, description, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [id, name, figmaFileKey || null, figmaUrl || '', description || '', now, now]
+      `INSERT INTO projects (id, user_id, name, figma_file_key, figma_url, description, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, userId, name, figmaFileKey || null, figmaUrl || '', description || '', now, now]
     );
     
     res.status(201).json({
@@ -61,15 +74,16 @@ router.post('/', async (req, res) => {
 
 /**
  * GET /api/projects/:id
- * Get project details with screens
+ * Get project details with screens (only if owned by user)
  */
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = (req as any).user?.userId;
     
     const [projects] = await db.execute<RowDataPacket[]>(
-      'SELECT * FROM projects WHERE id = ?',
-      [id]
+      'SELECT * FROM projects WHERE id = ? AND user_id = ?',
+      [id, userId]
     );
     
     if (projects.length === 0) {
@@ -95,15 +109,16 @@ router.get('/:id', async (req, res) => {
 
 /**
  * DELETE /api/projects/:id
- * Delete a project
+ * Delete a project (only if owned by user)
  */
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = (req as any).user?.userId;
     
     const [result] = await db.execute<ResultSetHeader>(
-      'DELETE FROM projects WHERE id = ?',
-      [id]
+      'DELETE FROM projects WHERE id = ? AND user_id = ?',
+      [id, userId]
     );
     
     if (result.affectedRows === 0) {
@@ -125,6 +140,11 @@ router.delete('/:id', async (req, res) => {
 router.get('/:id/screens', async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = (req as any).user?.userId;
+
+    if (!await verifyProjectOwnership(id, userId)) {
+      return res.status(404).json({ error: 'Projeto não encontrado' });
+    }
     
     const [screens] = await db.execute<RowDataPacket[]>(
       'SELECT * FROM project_screens WHERE project_id = ? ORDER BY screen_name',
@@ -145,6 +165,11 @@ router.get('/:id/screens', async (req, res) => {
 router.get('/:id/description', async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = (req as any).user?.userId;
+
+    if (!await verifyProjectOwnership(id, userId)) {
+      return res.status(404).json({ error: 'Projeto não encontrado' });
+    }
     
     // Check if description exists
     const [descriptions] = await db.execute<RowDataPacket[]>(
@@ -215,6 +240,11 @@ router.get('/:id/description', async (req, res) => {
 router.get('/:id/requirements', async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = (req as any).user?.userId;
+
+    if (!await verifyProjectOwnership(id, userId)) {
+      return res.status(404).json({ error: 'Projeto não encontrado' });
+    }
     
     const [requirements] = await db.execute<RowDataPacket[]>(
       'SELECT * FROM project_requirements WHERE project_id = ? ORDER BY created_at DESC',
@@ -235,10 +265,15 @@ router.get('/:id/requirements', async (req, res) => {
 router.post('/:id/requirements', async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = (req as any).user?.userId;
     const { screenId, screenName, content } = req.body;
     
     if (!screenId || !screenName || !content) {
       return res.status(400).json({ error: 'screenId, screenName e content são obrigatórios' });
+    }
+
+    if (!await verifyProjectOwnership(id, userId)) {
+      return res.status(404).json({ error: 'Projeto não encontrado' });
     }
     
     // Check if requirement exists for this screen
@@ -277,11 +312,16 @@ router.post('/:id/requirements', async (req, res) => {
  */
 router.put('/:projectId/requirements/:reqId', async (req, res) => {
   try {
-    const { reqId } = req.params;
+    const { projectId, reqId } = req.params;
+    const userId = (req as any).user?.userId;
     const { content } = req.body;
     
     if (!content) {
       return res.status(400).json({ error: 'content é obrigatório' });
+    }
+
+    if (!await verifyProjectOwnership(projectId, userId)) {
+      return res.status(404).json({ error: 'Projeto não encontrado' });
     }
     
     const [result] = await db.execute<ResultSetHeader>(
@@ -306,7 +346,12 @@ router.put('/:projectId/requirements/:reqId', async (req, res) => {
  */
 router.delete('/:projectId/requirements/:reqId', async (req, res) => {
   try {
-    const { reqId } = req.params;
+    const { projectId, reqId } = req.params;
+    const userId = (req as any).user?.userId;
+
+    if (!await verifyProjectOwnership(projectId, userId)) {
+      return res.status(404).json({ error: 'Projeto não encontrado' });
+    }
     
     const [result] = await db.execute<ResultSetHeader>(
       'DELETE FROM project_requirements WHERE id = ?',
@@ -332,12 +377,13 @@ router.delete('/:projectId/requirements/:reqId', async (req, res) => {
 router.get('/:id/export', async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = (req as any).user?.userId;
     const format = (req.query.format as string) || 'html';
     
-    // Get project info
+    // Get project info (with ownership check)
     const [projects] = await db.execute<RowDataPacket[]>(
-      'SELECT * FROM projects WHERE id = ?',
-      [id]
+      'SELECT * FROM projects WHERE id = ? AND user_id = ?',
+      [id, userId]
     );
     
     if (projects.length === 0) {

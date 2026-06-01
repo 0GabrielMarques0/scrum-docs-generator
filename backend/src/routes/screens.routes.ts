@@ -76,6 +76,7 @@ const upload = multer({
 router.post('/upload/:projectId', upload.array('images', 20), async (req, res) => {
   try {
     const { projectId } = req.params;
+    const userId = (req as any).user?.userId;
     const files = req.files as Express.Multer.File[];
     const names = req.body.names ? (Array.isArray(req.body.names) ? req.body.names : [req.body.names]) : [];
 
@@ -83,10 +84,10 @@ router.post('/upload/:projectId', upload.array('images', 20), async (req, res) =
       return res.status(400).json({ error: 'Nenhuma imagem enviada' });
     }
 
-    // Check if project exists
+    // Check if project exists and belongs to user
     const [projects] = await db.execute<RowDataPacket[]>(
-      'SELECT * FROM projects WHERE id = ?',
-      [projectId]
+      'SELECT * FROM projects WHERE id = ? AND user_id = ?',
+      [projectId, userId]
     );
 
     if (projects.length === 0) {
@@ -145,6 +146,17 @@ router.post('/upload/:projectId', upload.array('images', 20), async (req, res) =
 router.get('/:projectId', async (req, res) => {
   try {
     const { projectId } = req.params;
+    const userId = (req as any).user?.userId;
+
+    // Verify project ownership
+    const [projects] = await db.execute<RowDataPacket[]>(
+      'SELECT id FROM projects WHERE id = ? AND user_id = ?',
+      [projectId, userId]
+    );
+
+    if (projects.length === 0) {
+      return res.status(404).json({ error: 'Projeto não encontrado' });
+    }
 
     const [screens] = await db.execute<RowDataPacket[]>(
       'SELECT * FROM project_screens WHERE project_id = ? ORDER BY screen_name',
@@ -211,6 +223,19 @@ router.put('/:screenId', async (req, res) => {
   try {
     const { screenId } = req.params;
     const { name } = req.body;
+    const userId = (req as any).user?.userId;
+
+    // Verify screen belongs to user's project
+    const [screens] = await db.execute<RowDataPacket[]>(
+      `SELECT ps.id FROM project_screens ps 
+       JOIN projects p ON ps.project_id = p.id 
+       WHERE (ps.id = ? OR ps.screen_id = ?) AND p.user_id = ?`,
+      [screenId, screenId, userId]
+    );
+
+    if (screens.length === 0) {
+      return res.status(404).json({ error: 'Tela não encontrada' });
+    }
 
     await db.execute(
       'UPDATE project_screens SET screen_name = ? WHERE id = ? OR screen_id = ?',
@@ -234,14 +259,21 @@ router.put('/:screenId', async (req, res) => {
 router.delete('/:screenId', async (req, res) => {
   try {
     const { screenId } = req.params;
+    const userId = (req as any).user?.userId;
 
-    // Get image path before deleting
+    // Get image path and verify ownership
     const [screens] = await db.execute<RowDataPacket[]>(
-      'SELECT image_path FROM project_screens WHERE id = ? OR screen_id = ?',
-      [screenId, screenId]
+      `SELECT ps.image_path FROM project_screens ps 
+       JOIN projects p ON ps.project_id = p.id 
+       WHERE (ps.id = ? OR ps.screen_id = ?) AND p.user_id = ?`,
+      [screenId, screenId, userId]
     );
 
-    if (screens.length > 0 && screens[0].image_path) {
+    if (screens.length === 0) {
+      return res.status(404).json({ error: 'Tela não encontrada' });
+    }
+
+    if (screens[0].image_path) {
       const imagePath = path.join(process.cwd(), 'uploads', screens[0].image_path);
       if (fs.existsSync(imagePath)) {
         fs.unlinkSync(imagePath);
@@ -270,12 +302,15 @@ router.delete('/:screenId', async (req, res) => {
 router.post('/:screenId/analyze', async (req, res) => {
   try {
     const { screenId } = req.params;
+    const userId = (req as any).user?.userId;
     const { projectName } = req.body;
 
-    // Get screen info
+    // Get screen info with ownership check
     const [screens] = await db.execute<RowDataPacket[]>(
-      'SELECT ps.*, p.name as project_name FROM project_screens ps JOIN projects p ON ps.project_id = p.id WHERE ps.id = ? OR ps.screen_id = ?',
-      [screenId, screenId]
+      `SELECT ps.*, p.name as project_name FROM project_screens ps 
+       JOIN projects p ON ps.project_id = p.id 
+       WHERE (ps.id = ? OR ps.screen_id = ?) AND p.user_id = ?`,
+      [screenId, screenId, userId]
     );
 
     if (screens.length === 0) {

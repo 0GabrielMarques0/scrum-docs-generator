@@ -36,12 +36,14 @@ export async function initDatabase() {
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS projects (
         id VARCHAR(50) PRIMARY KEY,
+        user_id VARCHAR(50) NOT NULL,
         name VARCHAR(255) NOT NULL,
         figma_file_key VARCHAR(255),
         figma_url TEXT,
         description TEXT,
         created_at DATETIME NOT NULL,
-        updated_at DATETIME NOT NULL
+        updated_at DATETIME NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `);
 
@@ -122,6 +124,16 @@ export async function initDatabase() {
     // Add description to projects if not exists
     await connection.execute(`
       ALTER TABLE projects ADD COLUMN IF NOT EXISTS description TEXT AFTER figma_url
+    `).catch(() => {});
+
+    // Add user_id to projects if not exists (migration for existing tables)
+    await connection.execute(`
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS user_id VARCHAR(50) AFTER id
+    `).catch(() => {});
+
+    // Add index for user_id on projects
+    await connection.execute(`
+      CREATE INDEX IF NOT EXISTS idx_projects_user_id ON projects(user_id)
     `).catch(() => {});
 
     // Create indexes (MySQL syntax)
