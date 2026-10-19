@@ -1,40 +1,30 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router } from 'express';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { db } from '../database/init.js';
+import crypto from 'crypto';
 import { RowDataPacket } from 'mysql2';
-import { sendTemporaryPasswordEmail } from '../services/email.service.js';
+import { db } from '../database/init.js';
+import { config } from '../config.js';
+import { sendPasswordResetEmail } from '../services/email.service.js';
+import { authMiddleware, getUserId, signToken } from '../middleware/auth.js';
+import { asyncHandler, HttpError } from '../middleware/errors.js';
+import { assertStrongPassword, normalizeEmail, requireString } from '../utils/validation.js';
 
 const router = Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'scrum-docs-secret-key-change-in-production';
-const JWT_EXPIRES_IN = '30d'; // 30 days
+const BCRYPT_ROUNDS = 12;
+// Compared against when the email doesn't exist, so response time doesn't reveal registered emails
+const DUMMY_HASH = bcrypt.hashSync('dummy-password-for-timing', BCRYPT_ROUNDS);
 
-interface User {
+interface UserRow extends RowDataPacket {
   id: string;
   email: string;
   password: string;
   name: string;
 }
 
-// Middleware to verify JWT token
-export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-  const authHeader = req.headers.authorization;
-  
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Token não fornecido' });
-  }
-
-  const token = authHeader.substring(7);
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string };
-    (req as any).user = decoded;
-    next();
-  } catch (error) {
-    return res.status(401).json({ error: 'Token inválido ou expirado' });
-  }
-};
+function hashToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
 
 /**
  * @swagger
@@ -48,69 +38,36 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - email
- *               - password
+ *             required: [email, password]
  *             properties:
- *               email:
- *                 type: string
- *                 example: user@email.com
- *               password:
- *                 type: string
- *                 example: "123456"
+ *               email: { type: string }
+ *               password: { type: string }
  *     responses:
- *       200:
- *         description: Login bem sucedido
- *       401:
- *         description: Credenciais inválidas
+ *       200: { description: Login bem sucedido }
+ *       401: { description: Credenciais inválidas }
  */
-router.post('/login', async (req: Request, res: Response) => {
-  try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email e senha são obrigatórios' });
-    }
-
-    // Find user by email
-    const [rows] = await db.execute<RowDataPacket[]>(
-      'SELECT * FROM users WHERE email = ?',
-      [email]
-    );
-
-    if (rows.length === 0) {
-      return res.status(401).json({ error: 'Email ou senha inválidos' });
-    }
-
-    const user = rows[0] as User;
-
-    // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.password);
-
-    if (!isValidPassword) {
-      return res.status(401).json({ error: 'Email ou senha inválidos' });
-    }
-
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user.id, email: user.email },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
-    );
-
-    res.json({
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-      },
-    });
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'Erro ao fazer login' });
+router.post('/login', asyncHandler(async (req, res) => {
+  const { email, password } = req.body ?? {};
+  if (typeof email !== 'string' || typeof password !== 'string' || !email || !password) {
+    throw new HttpError(400, 'Email e senha são obrigatórios');
   }
-});
+
+  const [rows] = await db.execute<UserRow[]>(
+    'SELECT * FROM users WHERE LOWER(email) = ?',
+    [email.trim().toLowerCase()]
+  );
+  const user = rows[0];
+  const isValidPassword = await bcrypt.compare(password, user?.password ?? DUMMY_HASH);
+
+  if (!user || !isValidPassword) {
+    throw new HttpError(401, 'Email ou senha inválidos');
+  }
+
+  res.json({
+    token: signToken({ userId: user.id, email: user.email }),
+    user: { id: user.id, email: user.email, name: user.name },
+  });
+}));
 
 /**
  * @swagger
@@ -118,204 +75,127 @@ router.post('/login', async (req: Request, res: Response) => {
  *   post:
  *     summary: Cadastrar novo usuário
  *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - email
- *               - password
- *               - name
- *             properties:
- *               email:
- *                 type: string
- *                 example: user@email.com
- *               password:
- *                 type: string
- *                 example: "123456"
- *               name:
- *                 type: string
- *                 example: "João Silva"
  *     responses:
- *       201:
- *         description: Usuário criado com sucesso
- *       409:
- *         description: Email já cadastrado
+ *       201: { description: Usuário criado com sucesso }
+ *       409: { description: Email já cadastrado }
  */
-router.post('/register', async (req: Request, res: Response) => {
-  try {
-    const { email, password, name } = req.body;
+router.post('/register', asyncHandler(async (req, res) => {
+  const name = requireString(req.body?.name, 'Nome', 255);
+  const email = normalizeEmail(req.body?.email);
+  const { password } = req.body ?? {};
+  assertStrongPassword(password);
 
-    if (!email || !password || !name) {
-      return res.status(400).json({ error: 'Email, senha e nome são obrigatórios' });
-    }
-
-    // Check if email already exists
-    const [existing] = await db.execute<RowDataPacket[]>(
-      'SELECT id FROM users WHERE email = ?',
-      [email]
-    );
-
-    if (existing.length > 0) {
-      return res.status(409).json({ error: 'Email já cadastrado' });
-    }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Generate unique ID
-    const id = `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-
-    // Insert user
-    await db.execute(
-      'INSERT INTO users (id, email, password, name) VALUES (?, ?, ?, ?)',
-      [id, email, hashedPassword, name]
-    );
-
-    res.status(201).json({
-      message: 'Usuário criado com sucesso',
-      user: { id, email, name },
-    });
-  } catch (error) {
-    console.error('Register error:', error);
-    res.status(500).json({ error: 'Erro ao cadastrar usuário' });
+  const [existing] = await db.execute<RowDataPacket[]>(
+    'SELECT id FROM users WHERE LOWER(email) = ?',
+    [email]
+  );
+  if (existing.length > 0) {
+    throw new HttpError(409, 'Email já cadastrado');
   }
-});
 
-/**
- * GET /api/auth/me
- * Get current user info
- */
-router.get('/me', authMiddleware, async (req: Request, res: Response) => {
-  try {
-    const { userId } = (req as any).user;
+  const id = `user_${crypto.randomUUID()}`;
+  const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
-    const [rows] = await db.execute<RowDataPacket[]>(
-      'SELECT id, email, name, created_at FROM users WHERE id = ?',
-      [userId]
-    );
+  await db.execute(
+    'INSERT INTO users (id, email, password, name) VALUES (?, ?, ?, ?)',
+    [id, email, hashedPassword, name]
+  );
 
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'Usuário não encontrado' });
-    }
+  res.status(201).json({ message: 'Usuário criado com sucesso', user: { id, email, name } });
+}));
 
-    res.json(rows[0]);
-  } catch (error) {
-    console.error('Get user error:', error);
-    res.status(500).json({ error: 'Erro ao buscar usuário' });
-  }
-});
+router.get('/me', authMiddleware, asyncHandler(async (req, res) => {
+  const [rows] = await db.execute<RowDataPacket[]>(
+    'SELECT id, email, name, created_at FROM users WHERE id = ?',
+    [getUserId(req)]
+  );
+
+  if (rows.length === 0) throw new HttpError(404, 'Usuário não encontrado');
+  res.json(rows[0]);
+}));
 
 /**
  * POST /api/auth/forgot-password
- * Send temporary password to user email
+ * Sends a single-use reset link. The current password stays valid until the link is used,
+ * so nobody can lock another user out just by knowing their email.
  */
-router.post('/forgot-password', async (req: Request, res: Response) => {
-  try {
-    const { email } = req.body;
+router.post('/forgot-password', asyncHandler(async (req, res) => {
+  const genericResponse = { message: 'Se o email estiver cadastrado, você receberá um link para redefinir a senha' };
+  const email = normalizeEmail(req.body?.email);
 
-    if (!email) {
-      return res.status(400).json({ error: 'Email é obrigatório' });
-    }
+  const [rows] = await db.execute<UserRow[]>(
+    'SELECT id, email, name FROM users WHERE LOWER(email) = ?',
+    [email]
+  );
+  const user = rows[0];
+  if (!user) return res.json(genericResponse);
 
-    // Check if user exists
-    const [rows] = await db.execute<RowDataPacket[]>(
-      'SELECT id, email, name FROM users WHERE email = ?',
-      [email]
-    );
+  const token = crypto.randomBytes(32).toString('hex');
 
-    if (rows.length === 0) {
-      // Return success even if user doesn't exist (security)
-      return res.json({ message: 'Se o email existir, uma senha provisória será enviada' });
-    }
+  // Only the latest link is valid. Expiry is computed by MySQL so it matches the NOW() check on reset.
+  await db.execute('DELETE FROM password_resets WHERE user_id = ?', [user.id]);
+  await db.execute(
+    'INSERT INTO password_resets (token_hash, user_id, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL ? MINUTE))',
+    [hashToken(token), user.id, config.passwordResetTtlMinutes]
+  );
 
-    const user = rows[0];
+  const resetUrl = `${config.frontendUrl}/reset-password?token=${token}`;
+  const emailSent = await sendPasswordResetEmail(user.email, user.name, resetUrl);
 
-    // Generate temporary password
-    const tempPassword = Math.random().toString(36).substring(2, 10) + 'A1';
-    const hashedPassword = await bcrypt.hash(tempPassword, 10);
-
-    // Update user password
-    await db.execute(
-      'UPDATE users SET password = ? WHERE id = ?',
-      [hashedPassword, user.id]
-    );
-
-    // Send email with temporary password
-    const emailSent = await sendTemporaryPasswordEmail(email, user.name, tempPassword);
-    
-    if (!emailSent) {
-      // If email not configured, log the password (dev only)
-      console.log(`[FORGOT PASSWORD] User: ${email}, Temp Password: ${tempPassword}`);
-    }
-
-    res.json({ message: 'Se o email existir, uma senha provisória será enviada' });
-  } catch (error) {
-    console.error('Forgot password error:', error);
-    res.status(500).json({ error: 'Erro ao processar solicitação' });
+  if (!emailSent && !config.isProduction) {
+    console.log(`[DEV] Password reset link for ${user.email}: ${resetUrl}`);
   }
-});
+
+  res.json(genericResponse);
+}));
 
 /**
- * POST /api/auth/change-password
- * Change password for authenticated user
+ * POST /api/auth/reset-password
+ * Sets a new password using the token received by email.
  */
-router.post('/change-password', authMiddleware, async (req: Request, res: Response) => {
-  try {
-    const { userId } = (req as any).user;
-    const { currentPassword, newPassword } = req.body;
-
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({ error: 'Senha atual e nova senha são obrigatórias' });
-    }
-
-    // Get current user
-    const [rows] = await db.execute<RowDataPacket[]>(
-      'SELECT * FROM users WHERE id = ?',
-      [userId]
-    );
-
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'Usuário não encontrado' });
-    }
-
-    const user = rows[0] as User;
-
-    // Verify current password
-    const isValidPassword = await bcrypt.compare(currentPassword, user.password);
-
-    if (!isValidPassword) {
-      return res.status(401).json({ error: 'Senha atual incorreta' });
-    }
-
-    // Validate new password
-    if (newPassword.length < 8) {
-      return res.status(400).json({ error: 'A nova senha deve ter pelo menos 8 caracteres' });
-    }
-    if (!/[A-Z]/.test(newPassword)) {
-      return res.status(400).json({ error: 'A nova senha deve conter pelo menos uma letra maiúscula' });
-    }
-    if (!/[a-z]/.test(newPassword)) {
-      return res.status(400).json({ error: 'A nova senha deve conter pelo menos uma letra minúscula' });
-    }
-    if (!/[0-9]/.test(newPassword)) {
-      return res.status(400).json({ error: 'A nova senha deve conter pelo menos um número' });
-    }
-
-    // Hash and update password
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await db.execute(
-      'UPDATE users SET password = ? WHERE id = ?',
-      [hashedPassword, userId]
-    );
-
-    res.json({ message: 'Senha alterada com sucesso' });
-  } catch (error) {
-    console.error('Change password error:', error);
-    res.status(500).json({ error: 'Erro ao alterar senha' });
+router.post('/reset-password', asyncHandler(async (req, res) => {
+  const { token, newPassword } = req.body ?? {};
+  if (typeof token !== 'string' || !/^[a-f0-9]{64}$/.test(token)) {
+    throw new HttpError(400, 'Link inválido ou expirado');
   }
-});
+  assertStrongPassword(newPassword);
+
+  const [rows] = await db.execute<RowDataPacket[]>(
+    `SELECT user_id FROM password_resets
+     WHERE token_hash = ? AND used_at IS NULL AND expires_at > NOW()`,
+    [hashToken(token)]
+  );
+  if (rows.length === 0) throw new HttpError(400, 'Link inválido ou expirado');
+
+  const userId = rows[0].user_id as string;
+  const hashedPassword = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+
+  await db.execute('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, userId]);
+  await db.execute('DELETE FROM password_resets WHERE user_id = ?', [userId]);
+
+  res.json({ message: 'Senha redefinida com sucesso' });
+}));
+
+router.post('/change-password', authMiddleware, asyncHandler(async (req, res) => {
+  const userId = getUserId(req);
+  const { currentPassword, newPassword } = req.body ?? {};
+
+  if (typeof currentPassword !== 'string' || !currentPassword) {
+    throw new HttpError(400, 'Senha atual e nova senha são obrigatórias');
+  }
+  assertStrongPassword(newPassword);
+
+  const [rows] = await db.execute<UserRow[]>('SELECT * FROM users WHERE id = ?', [userId]);
+  if (rows.length === 0) throw new HttpError(404, 'Usuário não encontrado');
+
+  if (!(await bcrypt.compare(currentPassword, rows[0].password))) {
+    throw new HttpError(401, 'Senha atual incorreta');
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+  await db.execute('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, userId]);
+
+  res.json({ message: 'Senha alterada com sucesso' });
+}));
 
 export const authRoutes = router;

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Sparkles, Layers, Edit3, FileType, Upload, ArrowRight, CheckCircle, Moon, Sun, Github, Figma } from 'lucide-react'
+import { Sparkles, Layers, Edit3, FileType, Upload, ArrowRight, CheckCircle, Moon, Sun, Github, MessagesSquare, Image } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 export default function LandingPage() {
@@ -20,13 +20,13 @@ export default function LandingPage() {
   const features = [
     {
       icon: Upload,
-      title: 'Import do Figma',
-      description: 'Cole o link da tela do Figma e importe automaticamente',
+      title: 'Envio de Prints',
+      description: 'Arraste, cole ou envie os prints das telas do seu sistema',
     },
     {
       icon: Sparkles,
-      title: 'IA Generativa',
-      description: 'GPT-4o analisa a tela e gera requisitos funcionais completos',
+      title: 'Análise com IA',
+      description: 'A IA analisa as telas e gera requisitos funcionais, não funcionais e regras de negócio',
     },
     {
       icon: Layers,
@@ -40,13 +40,13 @@ export default function LandingPage() {
     },
     {
       icon: FileType,
-      title: 'Exportar DOCX',
-      description: 'Baixe a documentação formatada em Word',
+      title: 'Exportar Word e PDF',
+      description: 'Baixe a documentação formatada em Word, PDF ou HTML',
     },
     {
-      icon: Github,
-      title: 'Integração GitHub',
-      description: 'Envie documentos direto para seu repositório',
+      icon: MessagesSquare,
+      title: 'Dúvidas Antes de Escrever',
+      description: 'A IA pergunta o que o print não mostra e usa suas respostas nos requisitos',
     },
   ]
 
@@ -54,16 +54,16 @@ export default function LandingPage() {
     'Economize horas de trabalho manual',
     'Documentação padronizada e profissional',
     'Requisitos completos com regras de negócio',
-    'Critérios de aceitação prontos para uso',
+    'Dúvidas levantadas antes de escrever os requisitos',
     'Histórico de projetos organizado',
     'Colaboração facilitada com a equipe',
   ]
 
   const steps = [
     { number: '1', title: 'Crie um projeto', description: 'Organize suas telas em projetos' },
-    { number: '2', title: 'Importe do Figma', description: 'Cole o link da tela do Figma' },
-    { number: '3', title: 'Gere com IA', description: 'Clique e deixe a IA trabalhar' },
-    { number: '4', title: 'Exporte', description: 'Baixe em DOCX ou envie ao GitHub' },
+    { number: '2', title: 'Envie os prints', description: 'Adicione as imagens de cada tela' },
+    { number: '3', title: 'Responda as dúvidas', description: 'A IA pergunta e depois gera os requisitos' },
+    { number: '4', title: 'Exporte', description: 'Baixe em Word, PDF ou HTML' },
   ]
 
   return (
@@ -111,7 +111,7 @@ export default function LandingPage() {
       <section className="py-20 px-4">
         <div className="max-w-5xl mx-auto text-center">
           <div className="flex items-center justify-center gap-2 mb-6">
-            <Figma className="text-primary-500" size={24} />
+            <Image className="text-primary-500" size={24} />
             <ArrowRight className="text-slate-400" size={20} />
             <Sparkles className="text-primary-500" size={24} />
             <ArrowRight className="text-slate-400" size={20} />
@@ -119,16 +119,16 @@ export default function LandingPage() {
           </div>
           
           <h1 className="text-4xl md:text-6xl font-bold text-slate-800 dark:text-white mb-6">
-            Transforme Telas do Figma em{' '}
+            Transforme Prints de Telas em{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-500 to-purple-500">
               Documentação de Requisitos
             </span>
           </h1>
           
           <p className="text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto mb-10">
-            Cole o link do Figma e deixe a inteligência artificial gerar 
-            requisitos funcionais, regras de negócio e critérios de aceitação 
-            automaticamente. Economize horas de trabalho manual.
+            Envie os prints das suas telas, responda as dúvidas que a IA levantar
+            e receba requisitos funcionais, não funcionais e regras de negócio
+            prontos para o time. Economize horas de trabalho manual.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

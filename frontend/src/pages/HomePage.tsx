@@ -6,12 +6,12 @@ export default function HomePage() {
     {
       icon: Upload,
       title: 'Upload de Prints',
-      description: 'Faça upload de prints das telas do seu sistema para gerar requisitosfuncionais',
+      description: 'Faça upload de prints das telas do seu sistema para gerar requisitos funcionais',
     },
     {
       icon: Sparkles,
       title: 'Análise com IA',
-      description: 'Inteligência artificial analisa as imagens e gera requisitos funcionais e não funcionais',
+      description: 'A IA analisa as imagens, levanta dúvidas e gera requisitos funcionais e não funcionais',
     },
     {
       icon: Layers,

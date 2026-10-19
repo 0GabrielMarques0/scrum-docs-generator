@@ -1,0 +1,24 @@
+# Local development database. Start with: npm run db:up (from the repo root)
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: scrum-docs-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: specai_root_dev
+      MYSQL_DATABASE: scrum_docs
+      MYSQL_USER: specai
+      MYSQL_PASSWORD: specai_dev
+    ports:
+      # Bound to localhost only; 3307 avoids clashing with a native MySQL on 3306/3305
+      - "127.0.0.1:3307:3306"
+    volumes:
+      - scrum-docs-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uspecai", "-pspecai_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  scrum-docs-mysql-data:

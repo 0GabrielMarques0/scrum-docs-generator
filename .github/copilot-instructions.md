@@ -362,7 +362,9 @@ Ao revisar um diff:
 - JWT
 - bcryptjs
 - Resend (email)
+- Anthropic SDK (Claude)
+- Puppeteer (PDF) / docx (Word)
+- helmet / express-rate-limit
 
-## Deploy
-- Vercel (frontend)
-- Railway (backend + MySQL)
+## Ambiente
+- Execução local: Docker Compose (MySQL), Vite (frontend), tsx (backend)

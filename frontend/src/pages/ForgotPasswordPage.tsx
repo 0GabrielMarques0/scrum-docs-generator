@@ -47,7 +47,7 @@ export default function ForgotPasswordPage() {
           </div>
           <h1 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">Email enviado!</h1>
           <p className="text-slate-500 dark:text-slate-400 mb-6">
-            Se o email estiver cadastrado, você receberá uma senha provisória.
+            Se o email estiver cadastrado, você receberá um link para redefinir a senha. O link expira em 1 hora.
           </p>
           <Link 
             to="/login"
@@ -82,7 +82,7 @@ export default function ForgotPasswordPage() {
           />
           <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Esqueci minha senha</h1>
           <p className="text-slate-500 dark:text-slate-400 mt-2">
-            Digite seu email para receber uma senha provisória
+            Digite seu email para receber um link de redefinição
           </p>
         </div>
 
@@ -128,7 +128,7 @@ export default function ForgotPasswordPage() {
               ) : (
                 <>
                   <Mail size={20} />
-                  Enviar senha provisória
+                  Enviar link de redefinição
                 </>
               )}
             </button>

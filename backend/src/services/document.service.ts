@@ -1,5 +1,6 @@
-import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType, HeadingLevel, ShadingType } from 'docx';
-import puppeteer from 'puppeteer';
+import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, HeadingLevel, ShadingType } from 'docx';
+import puppeteer, { Browser } from 'puppeteer';
+import { escapeHtml } from '../utils/validation.js';
 
 // Colors
 const COLORS = {
@@ -229,114 +230,108 @@ export async function htmlToDocx(html: string, title: string): Promise<Buffer> {
   return await Packer.toBuffer(doc);
 }
 
+
+// ===== PDF (Puppeteer) =====
+
+const PDF_STYLES = `
+  @page { margin: 2cm; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11pt; line-height: 1.6; color: #333; background: white; }
+  h1 { color: #1e3a5f; font-size: 24pt; border-bottom: 3px solid #1e3a5f; padding-bottom: 10px; margin-bottom: 20px; }
+  h2 { color: #1e3a5f; font-size: 16pt; margin-top: 30px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; }
+  h3 { color: #2c5282; font-size: 13pt; }
+  table { width: 100%; border-collapse: collapse; margin: 15px 0; page-break-inside: auto; }
+  tr { page-break-inside: avoid; }
+  th { background-color: #1e3a5f !important; color: white !important; padding: 10px; text-align: left; font-weight: bold; border: 1px solid #1e3a5f; }
+  td { padding: 8px 10px; border: 1px solid #e2e8f0; vertical-align: top; }
+  tr:nth-child(even) { background-color: #f8fafc; }
+  ul, ol { margin: 10px 0; padding-left: 25px; }
+  li { margin: 5px 0; }
+  p { margin: 8px 0; }
+  a { color: #2c5282; text-decoration: none; }
+  .page-break { page-break-before: always; }
+`;
+
+let browserPromise: Promise<Browser> | null = null;
+
+/** Single shared Chromium instance (launching one per request is slow and memory hungry) */
+function getBrowser(): Promise<Browser> {
+  if (!browserPromise) {
+    browserPromise = puppeteer
+      .launch({
+        headless: true,
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      })
+      .then(browser => {
+        browser.on('disconnected', () => { browserPromise = null; });
+        return browser;
+      })
+      .catch(error => {
+        browserPromise = null;
+        throw error;
+      });
+  }
+  return browserPromise;
+}
+
+export async function closeBrowser() {
+  if (browserPromise) {
+    const browser = await browserPromise.catch(() => null);
+    browserPromise = null;
+    await browser?.close();
+  }
+}
+
+/** Keeps only the <body> content of a full HTML document (or returns the fragment as-is) */
+export function extractBody(html: string): string {
+  const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+  return bodyMatch ? bodyMatch[1] : html;
+}
+
 /**
- * Convert HTML content to PDF buffer using Puppeteer
+ * Convert HTML content to PDF buffer using Puppeteer.
+ * The HTML comes from users/AI, so the page runs with JavaScript disabled and every
+ * network request blocked (prevents SSRF against internal services).
  */
-export async function htmlToPdf(html: string): Promise<Buffer> {
-  // Decode HTML entities in the content
-  const decodedHtml = decodeHtmlEntities(html);
-  
-  // Wrap HTML in proper document structure with styles
-  const fullHtml = `
-<!DOCTYPE html>
-<html>
+export async function htmlToPdf(html: string, title = 'Documento'): Promise<Buffer> {
+  const fullHtml = `<!DOCTYPE html>
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <style>
-    @page { margin: 2cm; }
-    body { 
-      font-family: 'Segoe UI', Arial, sans-serif; 
-      font-size: 11pt; 
-      line-height: 1.6; 
-      color: #333;
-      background: white;
-    }
-    h1 { 
-      color: #1e3a5f; 
-      font-size: 24pt; 
-      border-bottom: 3px solid #1e3a5f; 
-      padding-bottom: 10px;
-      margin-bottom: 20px;
-    }
-    h2 { 
-      color: #1e3a5f; 
-      font-size: 16pt; 
-      margin-top: 30px;
-      border-bottom: 1px solid #e2e8f0;
-      padding-bottom: 5px;
-    }
-    h3 { 
-      color: #2c5282; 
-      font-size: 13pt; 
-    }
-    table { 
-      width: 100%; 
-      border-collapse: collapse; 
-      margin: 15px 0; 
-      page-break-inside: avoid;
-    }
-    th { 
-      background-color: #1e3a5f !important; 
-      color: white !important; 
-      padding: 12px 10px; 
-      text-align: left; 
-      font-weight: bold;
-      border: 1px solid #1e3a5f;
-    }
-    td { 
-      padding: 10px; 
-      border: 1px solid #e2e8f0; 
-    }
-    tr:nth-child(even) { 
-      background-color: #f8fafc; 
-    }
-    ul, ol { 
-      margin: 10px 0; 
-      padding-left: 25px; 
-    }
-    li { 
-      margin: 5px 0; 
-    }
-    p { 
-      margin: 8px 0; 
-    }
-    .header { 
-      background: linear-gradient(135deg, #1e3a5f, #2c5282);
-      color: white;
-      padding: 20px;
-      margin: -2cm -2cm 20px -2cm;
-      text-align: center;
-    }
-    .header h1 {
-      color: white;
-      border: none;
-      margin: 0;
-    }
-  </style>
+  <title>${escapeHtml(title)}</title>
+  <style>${PDF_STYLES}</style>
 </head>
 <body>
-${decodedHtml}
+${extractBody(html)}
 </body>
 </html>`;
 
-  const browser = await puppeteer.launch({ 
-    headless: true,
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-  });
-  
+  const browser = await getBrowser();
+  const page = await browser.newPage();
+
   try {
-    const page = await browser.newPage();
-    await page.setContent(fullHtml, { waitUntil: 'domcontentloaded' });
-    
+    await page.setJavaScriptEnabled(false);
+    await page.setRequestInterception(true);
+    page.on('request', request => {
+      const url = request.url();
+      if (url.startsWith('data:') || url === 'about:blank') {
+        request.continue();
+      } else {
+        request.abort();
+      }
+    });
+
+    await page.setContent(fullHtml, { waitUntil: 'load', timeout: 30_000 });
+
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,
       margin: { top: '2cm', right: '2cm', bottom: '2cm', left: '2cm' },
+      timeout: 60_000,
     });
-    
+
     return Buffer.from(pdfBuffer);
   } finally {
-    await browser.close();
+    await page.close().catch(() => {});
   }
 }

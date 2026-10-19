@@ -1,9 +1,13 @@
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
 
 const API_URL = import.meta.env.VITE_API_URL || '/api'
 
+/** AI requests (vision + long documents) can take a few minutes */
+export const AI_REQUEST_TIMEOUT = 6 * 60_000
+
 export const api = axios.create({
   baseURL: API_URL,
+  timeout: 60_000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -26,17 +30,40 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       const isAuthEndpoint = error.config?.url?.includes('/auth/')
       const hasToken = localStorage.getItem('auth_token')
-      
-      // Only auto-logout if user had a token and it's not an auth request
+
       if (hasToken && !isAuthEndpoint) {
-        console.warn('Session expired, redirecting to login...')
         localStorage.removeItem('auth_token')
         localStorage.removeItem('auth_user')
         // Use replace to prevent back button issues
         window.location.replace('/login')
       }
     }
-    console.error('API Error:', error.response?.data || error.message)
     return Promise.reject(error)
   }
 )
+
+/**
+ * Extracts the API error message. Handles `responseType: 'blob'` requests,
+ * where the JSON error body arrives as a Blob.
+ */
+export async function getApiErrorMessage(error: unknown, fallback: string): Promise<string> {
+  if (!axios.isAxiosError(error)) return fallback
+  const axiosError = error as AxiosError<any>
+
+  if (axiosError.code === 'ECONNABORTED') {
+    return 'A requisição demorou demais. Tente novamente.'
+  }
+  if (!axiosError.response) {
+    return 'Não foi possível conectar ao servidor. Verifique sua conexão.'
+  }
+
+  const data = axiosError.response.data
+  if (data instanceof Blob) {
+    try {
+      return JSON.parse(await data.text()).error || fallback
+    } catch {
+      return fallback
+    }
+  }
+  return data?.error || fallback
+}

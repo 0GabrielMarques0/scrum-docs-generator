@@ -1,29 +1,20 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FolderOpen, Plus, Trash2, ArrowRight } from 'lucide-react'
-import { api } from '../services/api'
+import { FolderOpen, Plus, Trash2, ArrowRight, FileText, MessagesSquare } from 'lucide-react'
+import { api, getApiErrorMessage } from '../services/api'
 import Loading from '../components/Loading'
 import { useToast } from '../components/Toast'
 import { useConfirm } from '../components/ConfirmModal'
-
-interface Project {
-  id: string
-  name: string
-  description?: string
-  figma_file_key?: string
-  figma_url?: string
-  created_at: string
-  updated_at: string
-}
+import { ProjectSummary } from '../types/project'
 
 export default function ProjectsPage() {
   const navigate = useNavigate()
   const { showError, showSuccess } = useToast()
   const { confirm } = useConfirm()
-  const [projects, setProjects] = useState<Project[]>([])
+  const [projects, setProjects] = useState<ProjectSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [showNewModal, setShowNewModal] = useState(false)
-  const [newProject, setNewProject] = useState({ name: '' })
+  const [newProject, setNewProject] = useState({ name: '', description: '' })
   const [creating, setCreating] = useState(false)
 
   useEffect(() => {
@@ -35,7 +26,7 @@ export default function ProjectsPage() {
       const { data } = await api.get('/projects')
       setProjects(data.projects)
     } catch (error) {
-      console.error('Error loading projects:', error)
+      showError('Erro', await getApiErrorMessage(error, 'Não foi possível carregar os projetos'))
     } finally {
       setLoading(false)
     }
@@ -50,15 +41,15 @@ export default function ProjectsPage() {
     try {
       setCreating(true)
       const { data } = await api.post('/projects', {
-        name: newProject.name
+        name: newProject.name.trim(),
+        description: newProject.description.trim() || undefined,
       })
       setShowNewModal(false)
-      setNewProject({ name: '' })
+      setNewProject({ name: '', description: '' })
       showSuccess('Projeto criado', 'Agora adicione prints das telas para gerar os requisitos')
       navigate(`/app/projects/${data.id}`)
     } catch (error) {
-      console.error('Error creating project:', error)
-      showError('Erro', 'Não foi possível criar o projeto')
+      showError('Erro', await getApiErrorMessage(error, 'Não foi possível criar o projeto'))
     } finally {
       setCreating(false)
     }
@@ -77,9 +68,10 @@ export default function ProjectsPage() {
     
     try {
       await api.delete(`/projects/${id}`)
-      loadProjects()
+      setProjects(prev => prev.filter(p => p.id !== id))
+      showSuccess('Projeto excluído')
     } catch (error) {
-      console.error('Error deleting project:', error)
+      showError('Erro ao excluir', await getApiErrorMessage(error, 'Não foi possível excluir o projeto'))
     }
   }
 
@@ -125,6 +117,7 @@ export default function ProjectsPage() {
                 </div>
                 <button
                   onClick={() => deleteProject(project.id)}
+                  aria-label={`Excluir projeto ${project.name}`}
                   className="text-slate-400 hover:text-red-500 p-1"
                 >
                   <Trash2 size={18} />
@@ -134,6 +127,14 @@ export default function ProjectsPage() {
               {project.description && (
                 <p className="text-sm text-slate-500 dark:text-slate-400 mb-2 line-clamp-2">{project.description}</p>
               )}
+              <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mb-1">
+                <span className="flex items-center gap-1"><FileText size={13} /> {project.screen_count} tela(s)</span>
+                {project.open_questions > 0 && (
+                  <span className="flex items-center gap-1 text-purple-600 dark:text-purple-400">
+                    <MessagesSquare size={13} /> {project.open_questions} dúvida(s) aberta(s)
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-slate-400 dark:text-slate-500 mb-3">
                 Criado em {new Date(project.created_at).toLocaleDateString('pt-BR')}
               </p>
@@ -166,10 +167,24 @@ export default function ProjectsPage() {
                   placeholder="Ex: Sistema de Vendas"
                   className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-white placeholder-slate-400"
                   autoFocus
+                  maxLength={255}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Descrição <span className="text-slate-400 font-normal">(opcional)</span>
+                </label>
+                <textarea
+                  value={newProject.description}
+                  onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                  placeholder="Ex: App de delivery; perfis cliente e entregador; pagamento via Pix e cartão"
+                  rows={3}
+                  maxLength={2000}
+                  className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-white placeholder-slate-400"
                 />
               </div>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Após criar o projeto, você poderá adicionar prints das telas para gerar os requisitos.
+                A descrição dá contexto à IA: quem usa o sistema, objetivo e regras gerais. Você pode editá-la depois.
               </p>
             </div>
             <div className="flex gap-3 mt-6">
@@ -182,7 +197,7 @@ export default function ProjectsPage() {
               </button>
               <button
                 onClick={createProject}
-                disabled={creating || !newProject.name}
+                disabled={creating || !newProject.name.trim()}
                 className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {creating ? (
